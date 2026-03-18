@@ -2,7 +2,8 @@
 https://r301.kilya.coop/
 
 Identifiants:
-admin    admin
+user: admin    s
+mdp: admin
 
 ## Configuration Apache
 ### MODs à installer
