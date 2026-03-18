@@ -2,7 +2,7 @@
 https://r301.kilya.coop/
 
 Identifiants:
-user: admin    s
+user: admin
 mdp: admin
 
 ## Configuration Apache
