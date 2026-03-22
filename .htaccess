@@ -1,0 +1,15 @@
+RewriteEngine On
+
+# Fichiers statiques servis directement
+RewriteCond %{REQUEST_URI} \.(css|jpg|jpeg|png|gif|ico|js)$ [NC]
+RewriteRule ^ - [L]
+
+# Routes API
+RewriteRule ^api/rencontre(/.*)?$ api_rencontre.php [QSA,L]
+RewriteRule ^api/participation(/.*)?$ api_participation.php [QSA,L]
+RewriteRule ^api/statistiques(/.*)?$ api_statistiques.php [QSA,L]
+
+# Reste : front-end MVC classique
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
