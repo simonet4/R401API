@@ -30,7 +30,7 @@ class RencontreControleur {
         RencontreLieu $lieu
     ) : bool {
 
-        if ($dateHeure < date("Y-m-d H:i:s")) {
+        if ($dateHeure < new DateTime()) {
             return false;
         } else {
             $rencontreAAjouter = new Rencontre(
@@ -95,7 +95,7 @@ class RencontreControleur {
     public function supprimerRencontre(int $rencontreId) : bool {
         $rencontreASupprimer = $this->rencontres->selectRencontreById($rencontreId);
 
-        if($rencontreASupprimer->getResultat() != null) {
+        if($rencontreASupprimer->estPassee()) {
             return false;
         } else {
             return $this->rencontres->supprimerRencontre($rencontreId);

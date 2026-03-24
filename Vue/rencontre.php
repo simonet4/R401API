@@ -1,42 +1,37 @@
 
 <?php
 
-use R301\Controleur\RencontreControleur;
-use R301\Vue\Component\SelectResultat;
-
-$controleur = RencontreControleur::getInstance();
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
         && isset($_POST['action'])
         && isset($_POST['rencontreId'])
 ) {
+    $rencontreId = (int)$_POST['rencontreId'];
     switch($_POST['action']) {
         case "ouvrirFeuilleDeMatch":
-            header('Location: /feuilleDeMatch/feuilleDeMatch?id='.$_POST['rencontreId']);
+            header('Location: /feuilleDeMatch/feuilleDeMatch?id=' . $rencontreId);
             die();
         case "ouvrirEvaluations":
-            header('Location: /feuilleDeMatch/evaluation?id='.$_POST['rencontreId']);
+            header('Location: /feuilleDeMatch/evaluation?id=' . $rencontreId);
             die();
         case "modifier":
-            header('Location: /rencontre/modifier?id='.$_POST['rencontreId']);
+            header('Location: /rencontre/modifier?id=' . $rencontreId);
             die();
         case "enregistrerResultat":
             if (isset($_POST['resultat'])) {
-                if (!$controleur->enregistrerResultat($_POST['rencontreId'], $_POST['resultat'])) {
-                    error_log("Erreur lors de la mise à jour du resultat");
-                }
+                api_patch('/api/rencontre/' . $rencontreId . '/resultat', ['resultat' => (string)$_POST['resultat']]);
                 header('Location: /rencontre');
                 die();
             }
+            break;
         case "supprimer":
-            if (!$controleur->supprimerRencontre($_POST['rencontreId'])) {
-                error_log("Erreur lors de la suppression de la rencontre");
-            }
+            api_delete('/api/rencontre/' . $rencontreId);
             header('Location: /rencontre');
             die();
     }
 } else {
 
-$rencontres = $controleur->listerToutesLesRencontres();
+$response = api_get('/api/rencontre', false);
+$rencontres = ($response['ok'] && is_array($response['data'])) ? $response['data'] : [];
 
 
 ?>
@@ -51,33 +46,38 @@ $rencontres = $controleur->listerToutesLesRencontres();
             <th style="width:8%">Résultat</th>
             <th style="width:20%; min-width: 200px;">Actions</th>
         </tr>
-        <?php foreach ($rencontres as $rencontre):
-
-            $selectResultat = new SelectResultat(
-                    null,
-                    $rencontre->getResultat()?->name
-            );
-        ?>
+        <?php foreach ($rencontres as $rencontre): ?>
         <form action="rencontre" method="post">
             <tr>
-                <input type="hidden" name="rencontreId" value="<?php echo $rencontre->getRencontreId(); ?>" />
-                <td><?php echo $rencontre->getDateEtHeure()->format('d/m/Y H:i') ?></td>
-                <td><?php echo $rencontre->getEquipeAdverse() ?></td>
-                <td><?php echo $rencontre->getAdresse() ?></td>
-                <td><?php echo $rencontre->getLieu()->name ?></td>
-                <?php if ($rencontre->estPassee() && $rencontre->getResultat() ===null): ?>
-                    <td><?php $selectResultat->toHTML(); ?></td>
+                <?php
+                    $id = (int)($rencontre['rencontreId'] ?? 0);
+                    $estPassee = (bool)($rencontre['estPassee'] ?? false);
+                    $resultat = (string)($rencontre['resultat'] ?? '');
+                ?>
+                <input type="hidden" name="rencontreId" value="<?php echo $id; ?>" />
+                <td><?php echo isset($rencontre['dateHeure']) ? date('d/m/Y H:i', strtotime((string)$rencontre['dateHeure'])) : ''; ?></td>
+                <td><?php echo htmlspecialchars((string)($rencontre['equipeAdverse'] ?? '')); ?></td>
+                <td><?php echo htmlspecialchars((string)($rencontre['adresse'] ?? '')); ?></td>
+                <td><?php echo htmlspecialchars((string)($rencontre['lieu'] ?? '')); ?></td>
+                <?php if ($estPassee && $resultat === ''): ?>
+                    <td>
+                        <select name="resultat">
+                            <option value="VICTOIRE">VICTOIRE</option>
+                            <option value="DEFAITE">DEFAITE</option>
+                            <option value="NUL">NUL</option>
+                        </select>
+                    </td>
                 <?php else: ?>
-                    <td><?php echo $rencontre->getResultat()?->name ?></td>
+                    <td><?php echo htmlspecialchars($resultat); ?></td>
                 <?php endif; ?>
                 <td class="actions">
-                    <?php if (!$rencontre->estPassee()): ?>
+                    <?php if (!$estPassee): ?>
                     <button name="action" value="ouvrirFeuilleDeMatch" class="info">Feuilles de match</button>
                     <button name="action" value="modifier" class="update">Modifier</button>
                     <button name="action" value="supprimer" class="delete">Supprimer</button>
                     <?php else: ?>
                     <button name="action" value="ouvrirEvaluations" class="info">Évaluations</button>
-                    <?php if ($rencontre->estPassee() && $rencontre->getResultat() ===null): ?>
+                    <?php if ($estPassee && $resultat === ''): ?>
                     <button class="create" name="action" value="enregistrerResultat">Enregistrer résultat</button>
                     <?php endif; ?>
                     <?php endif; ?>

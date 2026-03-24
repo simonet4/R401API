@@ -4,6 +4,7 @@ namespace R301\Modele\Rencontre;
 
 use DateTime;
 use PDO;
+use RuntimeException;
 use R301\Modele\DatabaseHandler;
 
 class RencontreDAO {
@@ -51,7 +52,12 @@ class RencontreDAO {
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':rencontreId', $rencontreId);
         if ($statement->execute()){
-             return $this->mapToRencontre($statement->fetch(PDO::FETCH_ASSOC));
+            $data = $statement->fetch(PDO::FETCH_ASSOC);
+            if ($data === false) {
+                throw new RuntimeException('Rencontre introuvable');
+            }
+
+            return $this->mapToRencontre($data);
         } else {
             exit();
         }
@@ -67,7 +73,12 @@ class RencontreDAO {
         $statement->bindValue(':equipe_adverse', $rencontreACreer->getEquipeAdverse());
         $statement->bindValue(':adresse', $rencontreACreer->getAdresse());
         $statement->bindValue(':lieu', $rencontreACreer->getLieu()->name);
-        $statement->bindValue(':resultat', $rencontreACreer->getResultat()->name);
+        $resultat = $rencontreACreer->getResultat();
+        if ($resultat === null) {
+            $statement->bindValue(':resultat', null, PDO::PARAM_NULL);
+        } else {
+            $statement->bindValue(':resultat', $resultat->name);
+        }
 
         return $statement->execute();
     }
@@ -104,6 +115,10 @@ class RencontreDAO {
         $query = 'DELETE FROM rencontre WHERE rencontre_id = :rencontreId';
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':rencontreId', $rencontreId);
-        return $statement->execute();
+        if (!$statement->execute()) {
+            return false;
+        }
+
+        return $statement->rowCount() > 0;
     }
 }

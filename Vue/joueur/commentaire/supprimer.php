@@ -1,13 +1,8 @@
 <?php
 
-use R301\Controleur\CommentaireControleur;
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['commentaireId'])) {
-        $controleurCommentaire = CommentaireControleur::getInstance();
-        if (!$controleurCommentaire->supprimerCommentaire($_POST['commentaireId'])) {
-            error_log("Erreur lors de la suppression du commentaire");
-        }
+    if (isset($_POST['commentaireId']) && isset($_POST['joueurId'])) {
+        api_delete('/api/joueur/' . (int)$_POST['joueurId'] . '/commentaire/' . (int)$_POST['commentaireId']);
     }
 }
 

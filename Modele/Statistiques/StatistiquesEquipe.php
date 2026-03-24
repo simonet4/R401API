@@ -30,14 +30,23 @@ class StatistiquesEquipe {
     }
 
     public function pourcentageDeVictoires(): int {
+        if ($this->nbMatchsJoues() === 0) {
+            return 0;
+        }
         return $this->nbVictoires() / $this->nbMatchsJoues() * 100;
     }
 
     public function pourcentageDeNuls(): int {
+        if ($this->nbMatchsJoues() === 0) {
+            return 0;
+        }
         return $this->nbNuls() / $this->nbMatchsJoues() * 100;
     }
 
     public function pourcentageDeDefaites(): int {
+        if ($this->nbMatchsJoues() === 0) {
+            return 0;
+        }
         return $this->nbDefaites() / $this->nbMatchsJoues() * 100;
     }
 }

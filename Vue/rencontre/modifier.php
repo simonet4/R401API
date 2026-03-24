@@ -2,46 +2,53 @@
 
 <?php
 
-use R301\Controleur\RencontreControleur;
-use R301\Modele\Rencontre\RencontreLieu;
 use R301\Vue\Component\Formulaire;
 
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($id <= 0) {
+    header('Location: /rencontre');
+    die();
+}
 
-$controleur = RencontreControleur::getInstance();
+$erreur = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
-        && isset($_GET['id'])
         && isset($_POST['dateHeure'])
         && isset($_POST['equipeAdverse'])
         && isset($_POST['adresse'])
         && isset($_POST['lieu'])
 ) {
-    if (
-        $controleur->modifierRencontre(
-            $_GET['id'],
-            new DateTime($_POST['dateHeure']),
-            $_POST['equipeAdverse'],
-            $_POST['adresse'],
-            RencontreLieu::fromName($_POST['lieu'])
-        )
-    ) {
-        header('Location: /rencontre');
-    }else{
-        error_log("Erreur lors de la modification de la rencontre");
-    }
-} else {
-    if (!isset($_GET['id'])) {
-        header("Location: /rencontre");
-    } else {
-        $rencontre = $controleur->getRenconterById($_GET['id']);
+    $result = api_put('/api/rencontre/' . $id, [
+        'dateHeure' => date('Y-m-d H:i:s', strtotime((string)$_POST['dateHeure'])),
+        'equipeAdverse' => (string)$_POST['equipeAdverse'],
+        'adresse' => (string)$_POST['adresse'],
+        'lieu' => (string)$_POST['lieu'],
+    ]);
 
-        $formulaire = new Formulaire("/rencontre/modifier?id=" . $rencontre->getRencontreId());
-        $formulaire->setDateTime("Date", "dateHeure", date("Y-m-d H:i"), $rencontre->getDateEtHeure()->format("Y-m-d H:i"));
-        $formulaire->setText("Equipe adverse", "equipeAdverse", "", $rencontre->getEquipeAdverse());
-        $formulaire->setText("Adresse", "adresse", "", $rencontre->getAdresse());
-        $formulaire->setSelect("Lieu", array_map(function (RencontreLieu $lieu) {
-            return $lieu->name;
-        }, RencontreLieu::cases()), "lieu", $rencontre->getLieu()->name);
-        $formulaire->addButton("Submit", "update", "Valider", "Modifier");
-        echo $formulaire;
+    if ($result['ok']) {
+        header('Location: /rencontre');
+        die();
+    } else {
+        $erreur = $result['error'];
     }
+}
+
+$response = api_get('/api/rencontre/' . $id);
+if (!$response['ok'] || !is_array($response['data'])) {
+    header('Location: /rencontre');
+    die();
+}
+
+$rencontre = $response['data'];
+$valueDate = isset($rencontre['dateHeure']) ? date('Y-m-d\TH:i', strtotime((string)$rencontre['dateHeure'])) : '';
+
+$formulaire = new Formulaire('/rencontre/modifier?id=' . $id);
+$formulaire->setDateTime('Date', 'dateHeure', date('Y-m-d\TH:i'), $valueDate);
+$formulaire->setText('Equipe adverse', 'equipeAdverse', '', (string)($rencontre['equipeAdverse'] ?? ''));
+$formulaire->setText('Adresse', 'adresse', '', (string)($rencontre['adresse'] ?? ''));
+$formulaire->setSelect('Lieu', ['DOMICILE', 'EXTERIEUR'], 'lieu', (string)($rencontre['lieu'] ?? ''));
+$formulaire->addButton('Submit', 'update', 'Valider', 'Modifier');
+echo $formulaire;
+
+if ($erreur !== null) {
+    echo '<p>' . htmlspecialchars($erreur) . '</p>';
 }

@@ -2,9 +2,9 @@
 
 <?php
 
-use R301\Controleur\RencontreControleur;
-use R301\Modele\Rencontre\RencontreLieu;
 use R301\Vue\Component\Formulaire;
+
+$erreur = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
         && isset($_POST['dateHeure'])
@@ -12,26 +12,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
         && isset($_POST['adresse'])
         && isset($_POST['lieu'])
 ) {
-    $controleur = RencontreControleur::getInstance();
+    $result = api_post('/api/rencontre', [
+        'dateHeure' => date('Y-m-d H:i:s', strtotime((string)$_POST['dateHeure'])),
+        'equipeAdverse' => (string)$_POST['equipeAdverse'],
+        'adresse' => (string)$_POST['adresse'],
+        'lieu' => (string)$_POST['lieu'],
+    ]);
 
-    if (
-        $controleur->ajouterRencontre(
-            new DateTime($_POST['dateHeure']),
-            $_POST['equipeAdverse'],
-            $_POST['adresse'],
-            RencontreLieu::fromName($_POST['lieu'])
-        )
-    ) {
+    if ($result['ok']) {
         header('Location: /rencontre');
-    }else{
-        error_log("Erreur lors de la création de la rencontre");
+        die();
+    } else {
+        $erreur = $result['error'];
     }
-} else {
-    $formulaire = new Formulaire("/rencontre/ajouter");
-    $formulaire->setDateTime("Date", "dateHeure", date("Y-m-d H:i"));
-    $formulaire->setText("Equipe adverse", "equipeAdverse");
-    $formulaire->setText("Adresse", "adresse");
-    $formulaire->setSelect("Lieu", array_map(function(RencontreLieu $lieu) { return $lieu->name; }, RencontreLieu::cases()), "lieu");
-    $formulaire->addButton("Submit", "create", "Valider", "Modifier");
-    echo $formulaire;
+}
+
+$formulaire = new Formulaire('/rencontre/ajouter');
+$formulaire->setDateTime('Date', 'dateHeure', date('Y-m-d\TH:i'));
+$formulaire->setText('Equipe adverse', 'equipeAdverse');
+$formulaire->setText('Adresse', 'adresse');
+$formulaire->setSelect('Lieu', ['DOMICILE', 'EXTERIEUR'], 'lieu');
+$formulaire->addButton('Submit', 'create', 'Valider', 'Valider');
+echo $formulaire;
+
+if ($erreur !== null) {
+    echo '<p>' . htmlspecialchars($erreur) . '</p>';
 }

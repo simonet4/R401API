@@ -1,40 +1,42 @@
 <?php
 
-use R301\Controleur\JoueurControleur;
-use R301\Controleur\StatistiquesControleur;
+$dashboardResponse = api_get('/api/statistiques/dashboard');
+$dashboardData = ($dashboardResponse['ok'] && is_array($dashboardResponse['data'])) ? $dashboardResponse['data'] : [];
 
-$controleur = StatistiquesControleur::getInstance();
-$statistiquesEquipe = $controleur->getStatistiquesEquipe();
-$statistiquesJoueurs = $controleur->getStatistiquesJoueurs();
+$statsEquipe = is_array($dashboardData['equipe'] ?? null) ? $dashboardData['equipe'] : [];
+$statsJoueurs = is_array($dashboardData['joueurs'] ?? null) ? $dashboardData['joueurs'] : [];
 
-$controleur = JoueurControleur::getInstance();
-$joueurs = $controleur->listerTousLesJoueurs();
+$dashboardError = $dashboardResponse['ok'] ? null : ($dashboardResponse['error'] ?? 'Erreur API dashboard');
 
 ?>
 
+<?php if ($dashboardError !== null): ?>
+    <p><?php echo htmlspecialchars((string)$dashboardError); ?></p>
+<?php endif; ?>
+
 <div class="TripleGrid">
     <div>
-        <h1><?php echo $statistiquesEquipe->nbVictoires(); ?></h1>
+        <h1><?php echo (int)($statsEquipe['nbVictoires'] ?? 0); ?></h1>
         <p> matchs gagnés</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->nbNuls(); ?></h1>
+        <h1><?php echo (int)($statsEquipe['nbNuls'] ?? 0); ?></h1>
         <p> matchs nuls</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->nbDefaites(); ?></h1>
+        <h1><?php echo (int)($statsEquipe['nbDefaites'] ?? 0); ?></h1>
         <p> matchs perdus</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->pourcentageDeVictoires(); ?>%</h1>
+        <h1><?php echo (int)($statsEquipe['pourcentageDeVictoires'] ?? 0); ?>%</h1>
         <p> de matchs gagnés</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->pourcentageDeNuls(); ?>%</h1>
+        <h1><?php echo (int)($statsEquipe['pourcentageDeNuls'] ?? 0); ?>%</h1>
         <p> de matchs nuls</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->pourcentageDeDefaites(); ?>%</h1>
+        <h1><?php echo (int)($statsEquipe['pourcentageDeDefaites'] ?? 0); ?>%</h1>
         <p> de matchs perdus</p>
     </div>
 </div>
@@ -50,16 +52,16 @@ $joueurs = $controleur->listerTousLesJoueurs();
             <th style="width:7%;">Moyenne évaluations</th>
             <th style="width:7%;">Pourcentage gagnés</th>
         </tr>
-        <?php foreach ($joueurs as $joueur): ?>
+        <?php foreach ($statsJoueurs as $joueur): ?>
         <tr>
-            <td><?php echo $joueur->toString(); ?></td>
-            <td><?php echo $joueur->getStatut()->name; ?></td>
-            <td><?php echo $statistiquesJoueurs->posteLePlusPerformant($joueur)?->name; ?></td>
-            <td><?php echo $statistiquesJoueurs->nbRencontresConsecutivesADate($joueur); ?></td>
-            <td><?php echo $statistiquesJoueurs->nbTitularisations($joueur); ?></td>
-            <td><?php echo $statistiquesJoueurs->nbRemplacant($joueur); ?></td>
-            <td><?php echo $statistiquesJoueurs->moyenneDesEvaluations($joueur); ?></td>
-            <td><?php echo $statistiquesJoueurs->pourcentageDeMatchsGagnes($joueur); ?></td>
+            <td><?php echo htmlspecialchars(trim((string)($joueur['nom'] ?? '') . ' ' . (string)($joueur['prenom'] ?? ''))); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['statutActuel'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['posteLePlusPerformant'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['nbRencontresConsecutives'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['nbTitularisations'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['nbRemplacant'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['moyenneDesEvaluations'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['pourcentageDeMatchsGagnes'] ?? '')); ?></td>
         </tr>
         <?php endforeach; ?>
     </table>

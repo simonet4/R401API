@@ -15,7 +15,7 @@ class StatistiquesJoueurs {
     ) {
         $this->participations = $participations;
         usort($rencontres, function ($a, $b) { return $a->getDateEtHeure() <=> $b->getDateEtHeure(); });
-        $this->rencontresJouees = array_filter($rencontres, function ($rencontre) { return $rencontre->joue(); });
+        $this->rencontresJouees = array_values(array_filter($rencontres, function ($rencontre) { return $rencontre->joue(); }));
     }
 
     private function participationsDunJoueur(Joueur $joueur): array {
@@ -61,7 +61,8 @@ class StatistiquesJoueurs {
     public function nbRencontresConsecutivesADate(Joueur $joueur): int {
         $nbRencontresConsecutivesADate = 0;
 
-        foreach ($this->rencontresJouees as $rencontre) {
+        for ($i = count($this->rencontresJouees) - 1; $i >= 0; $i--) {
+            $rencontre = $this->rencontresJouees[$i];
             if($this->leJoueurAParticipeALaRencontre($joueur, $rencontre)) {
                 $nbRencontresConsecutivesADate++;
             } else {
@@ -118,11 +119,17 @@ class StatistiquesJoueurs {
         }
     }
 
-    private function moyenneDesEvaluationsPourLePoste(Joueur $joueur, Poste $poste) {
+    private function moyenneDesEvaluationsPourLePoste(Joueur $joueur, Poste $poste): ?float {
         $participations = $this->participationsDunJoueurAuPoste($joueur, $poste);
+        $participationsEvaluees = array_filter($participations, function($participation) {
+            return $participation->getPerformance() !== null;
+        });
 
-        if ($this->nbMatchsEvalues($joueur) > 0) {
-            return array_sum(array_map( function($participation) { return $participation->notePerformance(); }, $participations)) / $this->nbMatchsEvalues($joueur);
+        $nbParticipationsEvaluees = count($participationsEvaluees);
+        if ($nbParticipationsEvaluees > 0) {
+            return array_sum(array_map(function($participation) {
+                return $participation->notePerformance();
+            }, $participationsEvaluees)) / $nbParticipationsEvaluees;
         } else {
             return null;
         }

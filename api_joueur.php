@@ -46,6 +46,7 @@ $parts = explode('/', trim($uri, '/'));
 
 $id = isset($parts[0]) && is_numeric($parts[0]) ? (int)$parts[0] : null;
 $sousRoute = isset($parts[1]) ? $parts[1] : null;
+$commentaireId = isset($parts[2]) && is_numeric($parts[2]) ? (int)$parts[2] : null;
 
 $method = $_SERVER['REQUEST_METHOD'];
 $body = json_decode(file_get_contents('php://input'), true);
@@ -53,6 +54,16 @@ $body = json_decode(file_get_contents('php://input'), true);
 $joueursCtrl = JoueurControleur::getInstance();
 $participationCtrl = ParticipationControleur::getInstance();
 $commentaireCtrl = CommentaireControleur::getInstance();
+
+function require_admin(array $tokenStatus): void {
+    $payload = is_array($tokenStatus['payload'] ?? null) ? $tokenStatus['payload'] : [];
+    $role = strtolower((string)($payload['role'] ?? ''));
+    if ($role !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['erreur' => 'Accès admin requis']);
+        exit();
+    }
+}
 
 function joueurToArray($j): array {
     return [
@@ -75,13 +86,7 @@ try {
     }
 
     if ($method === 'GET' && $id !== null) {
-        try {
-            $joueur = $joueursCtrl->getJoueurById($id);
-        } catch (Throwable $e) {
-            http_response_code(404);
-            echo json_encode(['erreur' => 'Joueur introuvable']);
-            exit();
-        }
+        $joueur = $joueursCtrl->getJoueurById($id);
 
         $commentaires = $commentaireCtrl->listerLesCommentairesDuJoueur($joueur);
         echo json_encode([
@@ -98,6 +103,7 @@ try {
     }
 
     if ($method === 'POST' && $id === null) {
+        require_admin($tokenStatus);
         $required = ['nom', 'prenom', 'numeroDeLicence', 'dateDeNaissance', 'tailleEnCm', 'poidsEnKg', 'statut'];
         foreach ($required as $field) {
             if (!is_array($body) || !isset($body[$field]) || $body[$field] === '') {
@@ -128,6 +134,7 @@ try {
     }
 
     if ($method === 'PUT' && $id !== null) {
+        require_admin($tokenStatus);
         $required = ['nom', 'prenom', 'numeroDeLicence', 'dateDeNaissance', 'tailleEnCm', 'poidsEnKg', 'statut'];
         foreach ($required as $field) {
             if (!is_array($body) || !isset($body[$field]) || $body[$field] === '') {
@@ -158,6 +165,7 @@ try {
     }
 
     if ($method === 'DELETE' && $id !== null && $sousRoute === null) {
+        require_admin($tokenStatus);
         $aDejaParticipe = false;
         foreach ($participationCtrl->listerToutesLesParticipations() as $p) {
             if ($p->getParticipant()->getJoueurId() === $id) {
@@ -183,6 +191,7 @@ try {
     }
 
     if ($method === 'POST' && $id !== null && $sousRoute === 'commentaire') {
+        require_admin($tokenStatus);
         if (!is_array($body) || !isset($body['contenu']) || trim((string)$body['contenu']) === '') {
             http_response_code(400);
             echo json_encode(['erreur' => 'Champ "contenu" requis']);
@@ -200,8 +209,24 @@ try {
         exit();
     }
 
+    if ($method === 'DELETE' && $id !== null && $sousRoute === 'commentaire' && $commentaireId !== null) {
+        require_admin($tokenStatus);
+        $ok = $commentaireCtrl->supprimerCommentaire((string)$commentaireId);
+        if ($ok) {
+            http_response_code(200);
+            echo json_encode(['message' => 'Commentaire supprimé']);
+        } else {
+            http_response_code(404);
+            echo json_encode(['erreur' => 'Commentaire introuvable']);
+        }
+        exit();
+    }
+
     http_response_code(404);
     echo json_encode(['erreur' => 'Route non trouvée']);
+} catch (RuntimeException $e) {
+    http_response_code(404);
+    echo json_encode(['erreur' => $e->getMessage()]);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['erreur' => 'Erreur serveur : ' . $e->getMessage()]);

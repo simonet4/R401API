@@ -1,12 +1,5 @@
 <?php
 
-use R301\Controleur\ParticipationControleur;
-use R301\Controleur\Participation\SupprimerParticipation;
-use R301\Modele\Participation\Poste;
-use R301\Modele\Participation\TitulaireOuRemplacant;
-
-$controleur = ParticipationControleur::getInstance();
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
     && isset($_POST['action'])
     && isset($_POST['poste'])
@@ -16,32 +9,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
     switch($_POST['action']) {
         case "create":
-            if (!$controleur->assignerUnParticipant(
-                $_POST['joueurId'],
-                $_POST['rencontreId'],
-                Poste::fromName($_POST['poste']),
-                TitulaireOuRemplacant::fromName($_POST['titulaireOuRemplacant'])
-            )) {
-                error_log("Erreur lors de l'ajout d'une participation");
-            }
+            api_post('/api/participation', [
+                'joueurId' => (int)$_POST['joueurId'],
+                'rencontreId' => (int)$_POST['rencontreId'],
+                'poste' => (string)$_POST['poste'],
+                'titulaireOuRemplacant' => (string)$_POST['titulaireOuRemplacant'],
+            ]);
             break;
         case "update":
             if (isset($_POST['participationId'])) {
-                if (!$controleur->modifierParticipation(
-                    $_POST['participationId'],
-                    Poste::fromName($_POST['poste']),
-                    TitulaireOuRemplacant::fromName($_POST['titulaireOuRemplacant']),
-                    $_POST['joueurId']
-                )) {
-                    error_log("Erreur lors de la modification de la participation");
-                }
+                api_put('/api/participation/' . (int)$_POST['participationId'], [
+                    'joueurId' => (int)$_POST['joueurId'],
+                    'poste' => (string)$_POST['poste'],
+                    'titulaireOuRemplacant' => (string)$_POST['titulaireOuRemplacant'],
+                ]);
             }
             break;
         case "delete":
             if (isset($_POST['participationId'])) {
-                if (!$controleur->supprimerLaPerformance($_POST['participationId'])) {
-                    error_log("Erreur lors de la suppression de la participation");
-                }
+                api_delete('/api/participation/' . (int)$_POST['participationId']);
             }
             break;
         default:

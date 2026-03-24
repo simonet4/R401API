@@ -8,12 +8,15 @@ $loader->register();
 // register the base directories for the namespace prefix
 $loader->addNamespace('R301', '.');
 
+require_once __DIR__ . '/Vue/Http/ApiClient.php';
+
 if (preg_match('/\.(?:png|jpg|jpeg|gif|ico|css|js)\??.*$/', $_SERVER["REQUEST_URI"])) {
     return false; // serve the requested resource as-is.
 } else {
 
 session_start();
-if ($_SERVER["REQUEST_URI"] !== "/login" && !isset($_SESSION ['username'])) {
+$isLoginRoute = strtok($_SERVER["REQUEST_URI"], '?') === '/login';
+if (!$isLoginRoute && !isset($_SESSION['auth_token'])) {
     header('Location: /login');
 }
 ?>
@@ -27,7 +30,7 @@ if ($_SERVER["REQUEST_URI"] !== "/login" && !isset($_SESSION ['username'])) {
         <link rel="icon" type="image/jpg" href="/favicon.jpg">
     </head>
     <body>
-    <?php if ($_SERVER["REQUEST_URI"] !== '/login') : ?>
+    <?php if (!$isLoginRoute) : ?>
         <nav class="navbar">
             <a href="/tableauDeBord" class="dropbtn">Tableau de bord</a>
             <div class="dropdown">

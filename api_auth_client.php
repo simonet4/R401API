@@ -5,6 +5,8 @@ function get_bearer_token(): ?string {
 
     $authorization = $headers['Authorization']
         ?? $headers['authorization']
+        ?? $_SERVER['HTTP_AUTHORIZATION']
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
         ?? null;
 
     if ($authorization === null) {
@@ -29,18 +31,15 @@ function verify_token_with_auth_api(?string $token): array {
 
     $authVerifyUrl = getenv('AUTH_VERIFY_URL');
     if ($authVerifyUrl === false || $authVerifyUrl === '') {
-        $authVerifyUrl = 'http://localhost:8001/verify';
+        $authVerifyUrl = 'http://127.0.0.1:8001/verify';
     }
-
-    $payload = json_encode(['token' => $token], JSON_UNESCAPED_UNICODE);
 
     $context = stream_context_create([
         'http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/json\r\n",
-            'content' => $payload,
+            'method' => 'GET',
+            'header' => "Authorization: Bearer {$token}\r\n",
             'ignore_errors' => true,
-            'timeout' => 5,
+            'timeout' => 2,
         ]
     ]);
 

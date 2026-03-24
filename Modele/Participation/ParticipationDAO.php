@@ -4,6 +4,7 @@ namespace R301\Modele\Participation;
 
 use DateTime;
 use PDO;
+use RuntimeException;
 use R301\Modele\DatabaseHandler;
 use R301\Modele\Joueur\JoueurDAO;
 use R301\Modele\Rencontre\Rencontre;
@@ -74,7 +75,12 @@ class ParticipationDAO {
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':participationId', $participationId);
         if ($statement->execute()){
-             return $this->mapToParticipation($statement->fetch(PDO::FETCH_ASSOC));
+            $data = $statement->fetch(PDO::FETCH_ASSOC);
+            if ($data === false) {
+                throw new RuntimeException('Participation introuvable');
+            }
+
+            return $this->mapToParticipation($data);
         } else {
             exit();
         }
@@ -115,7 +121,12 @@ class ParticipationDAO {
                       note_performance = :note_performance
                   WHERE participation_id = :participation_id';
         $statement=$this->database->pdo()->prepare($query);
-        $statement->bindValue(':note_performance', $participationAModifier->getPerformance()->value);
+        $performance = $participationAModifier->getPerformance();
+        if ($performance === null) {
+            $statement->bindValue(':note_performance', null, PDO::PARAM_NULL);
+        } else {
+            $statement->bindValue(':note_performance', $performance->value, PDO::PARAM_INT);
+        }
         $statement->bindValue(':participation_id', $participationAModifier->getParticipationId());
         return $statement->execute();
     }
@@ -124,7 +135,11 @@ class ParticipationDAO {
         $query = 'DELETE FROM participation WHERE participation_id = :participationId';
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':participationId', $participationId);
-        return $statement->execute();
+        if (!$statement->execute()) {
+            return false;
+        }
+
+        return $statement->rowCount() > 0;
     }
 
     public function lePosteEstDejaOccupe(int $rencontreId, Poste $poste, TitulaireOuRemplacant $titulaireOuRemplacant) : bool {

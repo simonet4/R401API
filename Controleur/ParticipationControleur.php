@@ -53,14 +53,21 @@ class ParticipationControleur {
         Poste $poste,
         TitulaireOuRemplacant $titulaireOuRemplacant
     ) : bool {
+        $rencontre = $this->rencontres->getRenconterById($rencontreId);
+        if ($rencontre->estPassee()) {
+            return false;
+        }
+
+        $joueur = $this->joueurs->getJoueurById($joueurId);
+        if ($joueur->getStatut() !== \R301\Modele\Joueur\JoueurStatut::ACTIF) {
+            return false;
+        }
+
         if ($this->participations->lePosteEstDejaOccupe($rencontreId, $poste, $titulaireOuRemplacant)
             || $this->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueurId)
         ) {
             return false;
         } else {
-            $joueur = $this->joueurs->getJoueurById($joueurId);
-            $rencontre = $this->rencontres->getRenconterById($rencontreId);
-
             $participationACreer = new Participation(
                 0,
                 $joueur,
@@ -82,8 +89,34 @@ class ParticipationControleur {
     ) : bool {
         $participationAModifier = $this->participations->selectParticipationById($participationId);
 
+        if ($participationAModifier->getRencontre()->estPassee()) {
+            return false;
+        }
+
+        $nouveauJoueur = $this->joueurs->getJoueurById($joueurId);
+        if ($nouveauJoueur->getStatut() !== \R301\Modele\Joueur\JoueurStatut::ACTIF) {
+            return false;
+        }
+
+        foreach ($this->participations->selectParticipationsByRencontreId($participationAModifier->getRencontre()->getRencontreId()) as $participation) {
+            if (
+                $participation->getParticipationId() !== $participationAModifier->getParticipationId()
+                && $participation->getPoste() === $poste
+                && $participation->getTitulaireOuRemplacant() === $titulaireOuRemplacant
+            ) {
+                return false;
+            }
+
+            if (
+                $participation->getParticipationId() !== $participationAModifier->getParticipationId()
+                && $participation->getParticipant()->getJoueurId() === $joueurId
+            ) {
+                return false;
+            }
+        }
+
         if ($participationAModifier->getParticipant()->getJoueurId() != $joueurId) {
-            $participationAModifier->setParticipant($this->joueurs->getJoueurById($joueurId));
+            $participationAModifier->setParticipant($nouveauJoueur);
         }
 
         $participationAModifier->setPoste($poste);
@@ -93,6 +126,11 @@ class ParticipationControleur {
     }
 
     public function supprimerLaParticipation(int $participationId) : bool {
+        $participationASupprimer = $this->participations->selectParticipationById($participationId);
+        if ($participationASupprimer->getRencontre()->estPassee()) {
+            return false;
+        }
+
         return $this->participations->deleteParticipation($participationId);
     }
 

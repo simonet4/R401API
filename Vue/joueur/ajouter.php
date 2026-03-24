@@ -1,9 +1,9 @@
 <h1>Ajouter un joueur</h1>
 <?php
 
-use R301\Controleur\JoueurControleur;
-use R301\Modele\Joueur\JoueurStatut;
 use R301\Vue\Component\Formulaire;
+
+$erreur = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
     && isset($_POST['nom'])
@@ -14,32 +14,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     && isset($_POST['poidsEnKg'])
     && isset($_POST['statut'])
 ) {
-    $controleur = JoueurControleur::getInstance();
+    $result = api_post('/api/joueur', [
+        'nom' => (string)$_POST['nom'],
+        'prenom' => (string)$_POST['prenom'],
+        'numeroDeLicence' => (string)$_POST['numeroDeLicence'],
+        'dateDeNaissance' => (string)$_POST['dateDeNaissance'],
+        'tailleEnCm' => (int)$_POST['tailleEnCm'],
+        'poidsEnKg' => (int)$_POST['poidsEnKg'],
+        'statut' => (string)$_POST['statut'],
+    ]);
 
-    if (
-        $controleur->ajouterJoueur(
-            $_POST['nom'],
-            $_POST['prenom'],
-            $_POST['numeroDeLicence'],
-            new DateTime($_POST['dateDeNaissance']),
-            $_POST['tailleEnCm'],
-            $_POST['poidsEnKg'],
-            $_POST['statut']
-        )
-    ) {
+    if ($result['ok']) {
         header('Location: /joueur');
+        die();
     } else {
-        error_log("Erreur lors de la création du joueur");
+        $erreur = $result['error'];
     }
-} else {
-    $formulaire = new Formulaire("/joueur/ajouter");
-    $formulaire->setText("Nom", "nom");
-    $formulaire->setText("Prenom", "prenom");
-    $formulaire->setText("Numéro de license", "numeroDeLicence", "00042");
-    $formulaire->setDate("Date de naissance", "dateDeNaissance");
-    $formulaire->setText("Taille (en cm)", "tailleEnCm");
-    $formulaire->setText("Poids (en kg)", "poidsEnKg");
-    $formulaire->setSelect("Statut", array_map(function($statut) { return $statut->name; } ,JoueurStatut::cases()), "statut");
-    $formulaire->addButton("Submit", "create", "valider", "Valider");
-    echo $formulaire;
+}
+
+$formulaire = new Formulaire('/joueur/ajouter');
+$formulaire->setText('Nom', 'nom');
+$formulaire->setText('Prenom', 'prenom');
+$formulaire->setText('Numéro de license', 'numeroDeLicence', '00042');
+$formulaire->setDate('Date de naissance', 'dateDeNaissance');
+$formulaire->setText('Taille (en cm)', 'tailleEnCm');
+$formulaire->setText('Poids (en kg)', 'poidsEnKg');
+$formulaire->setSelect('Statut', ['ACTIF', 'BLESSE', 'ABSENT', 'SUSPENDU'], 'statut');
+$formulaire->addButton('Submit', 'create', 'valider', 'Valider');
+echo $formulaire;
+
+if ($erreur !== null) {
+    echo '<p>' . htmlspecialchars($erreur) . '</p>';
 }

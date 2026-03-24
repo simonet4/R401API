@@ -1,17 +1,37 @@
 <?php
 
-use R301\Controleur\JoueurControleur;
+$response = api_get('/api/joueur');
+$joueurs = ($response['ok'] && is_array($response['data'])) ? $response['data'] : [];
+$apiError = $response['ok'] ? null : ($response['error'] ?? 'Erreur API');
 
-$controleur = JoueurControleur::getInstance();
-if (isset($_GET['recherche']) || isset($_GET['statut'])) {
-    $joueurs = $controleur->rechercherLesJoueurs($_GET['recherche'], $_GET['statut']);
-} else {
-    $joueurs = $controleur->listerTousLesJoueurs();
+$recherche = trim((string)($_GET['recherche'] ?? ''));
+$statut = trim((string)($_GET['statut'] ?? ''));
+
+if ($recherche !== '' || $statut !== '') {
+    $joueurs = array_values(array_filter($joueurs, function (array $joueur) use ($recherche, $statut) {
+        $ok = true;
+
+        if ($recherche !== '') {
+            $needle = mb_strtolower($recherche);
+            $nom = mb_strtolower((string)($joueur['nom'] ?? ''));
+            $prenom = mb_strtolower((string)($joueur['prenom'] ?? ''));
+            $ok = str_contains($nom, $needle) || str_contains($prenom, $needle);
+        }
+
+        if ($ok && $statut !== '') {
+            $ok = (string)($joueur['statut'] ?? '') === $statut;
+        }
+
+        return $ok;
+    }));
 }
 
 ?>
 
 <h1>Joueurs</h1>
+<?php if ($apiError !== null): ?>
+    <p><?php echo htmlspecialchars((string)$apiError); ?></p>
+<?php endif; ?>
 <div class="container">
     <form action="joueur" method="get">
         <div class="row">
@@ -51,17 +71,17 @@ if (isset($_GET['recherche']) || isset($_GET['statut'])) {
 
         <?php foreach ($joueurs as $joueur) { ?>
             <tr>
-                <td><?php echo $joueur->getNumeroDeLicence() ?></td>
-                <td><?php echo $joueur->getNom() ?></td>
-                <td><?php echo $joueur->getPrenom() ?></td>
-                <td><?php echo $joueur->getDateDeNaissance()->format('d/m/Y') ?></td>
-                <td><?php echo $joueur->getTailleEnCm() ?> cm</td>
-                <td><?php echo $joueur->getPoidsEnKg() ?> kg</td>
-                <td><?php echo $joueur->getStatut()->name ?></td>
+                <td><?php echo htmlspecialchars((string)($joueur['numeroDeLicence'] ?? '')); ?></td>
+                <td><?php echo htmlspecialchars((string)($joueur['nom'] ?? '')); ?></td>
+                <td><?php echo htmlspecialchars((string)($joueur['prenom'] ?? '')); ?></td>
+                <td><?php echo isset($joueur['dateDeNaissance']) ? date('d/m/Y', strtotime((string)$joueur['dateDeNaissance'])) : ''; ?></td>
+                <td><?php echo htmlspecialchars((string)($joueur['tailleEnCm'] ?? '')); ?> cm</td>
+                <td><?php echo htmlspecialchars((string)($joueur['poidsEnKg'] ?? '')); ?> kg</td>
+                <td><?php echo htmlspecialchars((string)($joueur['statut'] ?? '')); ?></td>
                 <td class="actions">
-                    <form action="joueur/modifier" method="get"><button class="update" type="submit" name="id" value="<?php echo $joueur->getJoueurId() ?>">Modifier</button></form>
-                    <form action="joueur/supprimer" method="post"><button class="delete" type="submit" name="id" value="<?php echo $joueur->getJoueurId() ?>"  onclick="return confirm('Voulez-vous vraiment supprimer ce joueur?')">Supprimer</button></form>
-                    <form action="joueur/commentaire" method="get"><button class="info" type="submit" name="id" value="<?php echo $joueur->getJoueurId() ?>">Commentaires</button></form>
+                    <form action="joueur/modifier" method="get"><button class="update" type="submit" name="id" value="<?php echo (int)($joueur['joueurId'] ?? 0); ?>">Modifier</button></form>
+                    <form action="joueur/supprimer" method="post"><button class="delete" type="submit" name="id" value="<?php echo (int)($joueur['joueurId'] ?? 0); ?>"  onclick="return confirm('Voulez-vous vraiment supprimer ce joueur?')">Supprimer</button></form>
+                    <form action="joueur/commentaire" method="get"><button class="info" type="submit" name="id" value="<?php echo (int)($joueur['joueurId'] ?? 0); ?>">Commentaires</button></form>
                 </td>
             </tr>
         <?php } ?>

@@ -33,14 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// ---- Vérification du token JWT via API d'auth ----
-$tokenStatus = verify_token_with_auth_api(get_bearer_token());
-if (!$tokenStatus['valid']) {
-    http_response_code($tokenStatus['status']);
-    echo json_encode(['erreur' => $tokenStatus['error']]);
-    exit();
-}
-
 // ---- Parsing de l'URL ----
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 // Compatible URL directe /api/rencontre et /r301-main/api/rencontre
@@ -54,6 +46,16 @@ $method = $_SERVER['REQUEST_METHOD'];
 $body = json_decode(file_get_contents('php://input'), true);
 
 $ctrl = RencontreControleur::getInstance();
+
+function require_admin(array $tokenStatus): void {
+    $payload = is_array($tokenStatus['payload'] ?? null) ? $tokenStatus['payload'] : [];
+    $role = strtolower((string)($payload['role'] ?? ''));
+    if ($role !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['erreur' => 'Accès admin requis']);
+        exit();
+    }
+}
 
 // ---- Helpers ----
 function rencontreToArray($r): array {
@@ -70,8 +72,24 @@ function rencontreToArray($r): array {
 
 // ---- Routage ----
 try {
+    // Lecture publique de la liste des rencontres passées et à venir.
+    if ($method === 'GET' && $id === null) {
+        $rencontres = $ctrl->listerToutesLesRencontres();
+        echo json_encode(array_map('rencontreToArray', $rencontres));
+        exit();
+    }
+
+    // Toutes les autres routes restent protégées.
+    $tokenStatus = verify_token_with_auth_api(get_bearer_token());
+    if (!$tokenStatus['valid']) {
+        http_response_code($tokenStatus['status']);
+        echo json_encode(['erreur' => $tokenStatus['error']]);
+        exit();
+    }
+
     // PATCH /api/rencontre/{id}/resultat
     if ($method === 'PATCH' && $id !== null && $sousRoute === 'resultat') {
+        require_admin($tokenStatus);
         if (empty($body['resultat'])) {
             http_response_code(400);
             echo json_encode(['erreur' => 'Champ "resultat" requis (VICTOIRE, DEFAITE, NUL)']);
@@ -93,13 +111,6 @@ try {
         exit();
     }
 
-    // GET /api/rencontre
-    if ($method === 'GET' && $id === null) {
-        $rencontres = $ctrl->listerToutesLesRencontres();
-        echo json_encode(array_map('rencontreToArray', $rencontres));
-        exit();
-    }
-
     // GET /api/rencontre/{id}
     if ($method === 'GET' && $id !== null) {
         try {
@@ -115,6 +126,7 @@ try {
 
     // POST /api/rencontre
     if ($method === 'POST') {
+        require_admin($tokenStatus);
         $champsRequis = ['dateHeure', 'equipeAdverse', 'adresse', 'lieu'];
         foreach ($champsRequis as $champ) {
             if (empty($body[$champ])) {
@@ -143,6 +155,7 @@ try {
 
     // PUT /api/rencontre/{id}
     if ($method === 'PUT' && $id !== null) {
+        require_admin($tokenStatus);
         $champsRequis = ['dateHeure', 'equipeAdverse', 'adresse', 'lieu'];
         foreach ($champsRequis as $champ) {
             if (empty($body[$champ])) {
@@ -171,6 +184,7 @@ try {
 
     // DELETE /api/rencontre/{id}
     if ($method === 'DELETE' && $id !== null) {
+        require_admin($tokenStatus);
         $ok = $ctrl->supprimerRencontre($id);
         if ($ok) {
             http_response_code(200);
@@ -185,7 +199,13 @@ try {
     http_response_code(404);
     echo json_encode(['erreur' => 'Route non trouvée']);
 
+} catch (RuntimeException $e) {
+    http_response_code(404);
+    echo json_encode(['erreur' => $e->getMessage()]);
 } catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['erreur' => 'Erreur serveur : ' . $e->getMessage()]);
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['erreur' => 'Erreur serveur : ' . $e->getMessage()]);
 }

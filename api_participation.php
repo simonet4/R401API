@@ -59,6 +59,16 @@ $body = json_decode(file_get_contents('php://input'), true);
 
 $ctrl = ParticipationControleur::getInstance();
 
+function require_admin(array $tokenStatus): void {
+    $payload = is_array($tokenStatus['payload'] ?? null) ? $tokenStatus['payload'] : [];
+    $role = strtolower((string)($payload['role'] ?? ''));
+    if ($role !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['erreur' => 'Accès admin requis']);
+        exit();
+    }
+}
+
 // ---- Helpers ----
 function participationToArray($p): array {
     return [
@@ -96,6 +106,7 @@ try {
 
     // POST /api/participation
     if ($method === 'POST') {
+        require_admin($tokenStatus);
         $champsRequis = ['joueurId', 'rencontreId', 'poste', 'titulaireOuRemplacant'];
         foreach ($champsRequis as $champ) {
             if (empty($body[$champ])) {
@@ -134,6 +145,7 @@ try {
 
     // PUT /api/participation/{id}
     if ($method === 'PUT' && $id !== null && $sousRoute === null) {
+        require_admin($tokenStatus);
         $champsRequis = ['joueurId', 'poste', 'titulaireOuRemplacant'];
         foreach ($champsRequis as $champ) {
             if (empty($body[$champ])) {
@@ -167,6 +179,7 @@ try {
 
     // PATCH /api/participation/{id}/performance
     if ($method === 'PATCH' && $id !== null && $sousRoute === 'performance') {
+        require_admin($tokenStatus);
         if (empty($body['performance'])) {
             http_response_code(400);
             echo json_encode(['erreur' => 'Champ "performance" requis (EXCELLENTE, BONNE, MOYENNE, MAUVAISE, CATASTROPHIQUE)']);
@@ -190,6 +203,7 @@ try {
 
     // DELETE /api/participation/{id}/performance
     if ($method === 'DELETE' && $id !== null && $sousRoute === 'performance') {
+        require_admin($tokenStatus);
         $ok = $ctrl->supprimerLaPerformance($id);
         if ($ok) {
             http_response_code(200);
@@ -203,6 +217,7 @@ try {
 
     // DELETE /api/participation/{id}
     if ($method === 'DELETE' && $id !== null && $sousRoute === null) {
+        require_admin($tokenStatus);
         $ok = $ctrl->supprimerLaParticipation($id);
         if ($ok) {
             http_response_code(200);
@@ -217,7 +232,13 @@ try {
     http_response_code(404);
     echo json_encode(['erreur' => 'Route non trouvée']);
 
+} catch (RuntimeException $e) {
+    http_response_code(404);
+    echo json_encode(['erreur' => $e->getMessage()]);
 } catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['erreur' => 'Erreur serveur : ' . $e->getMessage()]);
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['erreur' => 'Erreur serveur : ' . $e->getMessage()]);
 }

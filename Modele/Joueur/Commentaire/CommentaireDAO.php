@@ -58,6 +58,10 @@ class CommentaireDAO {
         $query = 'DELETE FROM commentaire WHERE commentaire_id = :commentaireId';
         $statement = $this->database->pdo()->prepare($query);
         $statement->bindValue(':commentaireId', $commentaireId);
-        return ($statement->execute());
+        if (!$statement->execute()) {
+            return false;
+        }
+
+        return $statement->rowCount() > 0;
     }
 }

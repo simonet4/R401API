@@ -4,6 +4,7 @@ namespace R301\Modele\Joueur;
 
 use DateTime;
 use PDO;
+use RuntimeException;
 use R301\Modele\DatabaseHandler;
 
 class JoueurDAO {
@@ -66,7 +67,12 @@ class JoueurDAO {
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':joueur_id', $joueurId);
         if ($statement->execute()){
-             return $this->mapToJoueur($statement->fetch(PDO::FETCH_ASSOC));
+            $data = $statement->fetch(PDO::FETCH_ASSOC);
+            if ($data === false) {
+                throw new RuntimeException('Joueur introuvable');
+            }
+
+            return $this->mapToJoueur($data);
         } else {
             exit();
         }
@@ -118,6 +124,10 @@ class JoueurDAO {
         $query = 'DELETE FROM joueur WHERE joueur_id = :joueur_id';
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':joueur_id', $joueurId);
-        return $statement->execute();
+        if (!$statement->execute()) {
+            return false;
+        }
+
+        return $statement->rowCount() > 0;
     }
 }

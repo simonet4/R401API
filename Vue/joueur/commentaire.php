@@ -1,31 +1,33 @@
 <?php
 
-use R301\Controleur\CommentaireControleur;
-use R301\Controleur\JoueurControleur;
 use R301\Vue\Component\Formulaire;
 
 if (!isset($_GET['id'])) {
     header('Location: /joueur');
     die();
+$id = (int)$_GET['id'];
+$response = api_get('/api/joueur/' . $id);
+if (!$response['ok'] || !is_array($response['data'])) {
+    header('Location: /joueur');
+    die();
 }
 
-$controleurJoueur = JoueurControleur::getInstance();
-$joueur = $controleurJoueur->getJoueurById($_GET['id']);
+$joueur = is_array($response['data']['joueur'] ?? null) ? $response['data']['joueur'] : [];
+$commentaires = is_array($response['data']['commentaires'] ?? null) ? $response['data']['commentaires'] : [];
 ?>
 
-<h1>Commentaires de <?php echo $joueur->toString(); ?></h1>
+<h1>Commentaires de <?php echo htmlspecialchars(trim((string)($joueur['nom'] ?? '') . ' ' . (string)($joueur['prenom'] ?? ''))); ?></h1>
 
 <?php
 $form = new Formulaire("commentaire/ajouter");
 $form->addTextArea("contenu");
-$form->addHiddenInput("joueurId", $_GET['id']);
+$form->addHiddenInput("joueurId", (string)$id);
 $form->addButton("submit", "create", "Publier le commentaire", "Publier le commentaire");
 echo $form;
 
-$controleurCommentaire = CommentaireControleur::getInstance();
-$commentaires = $controleurCommentaire->listerLesCommentairesDuJoueur($joueur);
-
-usort($commentaires, function ($a, $b) { return $b->getDate() <=> $a->getDate(); });
+usort($commentaires, function ($a, $b) {
+    return strtotime((string)($b['date'] ?? '')) <=> strtotime((string)($a['date'] ?? ''));
+});
 
 ?>
 <div class="container">
@@ -37,11 +39,11 @@ usort($commentaires, function ($a, $b) { return $b->getDate() <=> $a->getDate();
         </tr>
         <?php foreach ($commentaires as $commentaire): ?>
         <form action="/joueur/commentaire/supprimer" method="post">
-            <input type="hidden" name="commentaireId" value="<?php echo $commentaire->getCommentaireId(); ?>" />
-            <input type="hidden" name="joueurId" value="<?php echo $_GET['id']; ?>" />
+            <input type="hidden" name="commentaireId" value="<?php echo (int)($commentaire['commentaireId'] ?? 0); ?>" />
+            <input type="hidden" name="joueurId" value="<?php echo $id; ?>" />
             <tr>
-                <td><?php echo $commentaire->getDate()->format('d/m/Y H:i'); ?></td>
-                <td><?php echo $commentaire->getContenu(); ?></td>
+                <td><?php echo isset($commentaire['date']) ? date('d/m/Y H:i', strtotime((string)$commentaire['date'])) : ''; ?></td>
+                <td><?php echo htmlspecialchars((string)($commentaire['contenu'] ?? '')); ?></td>
                 <td class="actions">
                     <button class="delete" type="submit">Supprimer</button>
                 </td>
