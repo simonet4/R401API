@@ -11,12 +11,13 @@
  *   PATCH  /api/rencontre/{id}/resultat -> enregistrer le résultat
  */
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/Psr4AutoloaderClass.php';
+require_once __DIR__ . '/Psr4AutoloaderClass.php';
+require_once __DIR__ . '/api_auth_client.php';
 use R301\Psr4AutoloaderClass;
 
 $loader = new Psr4AutoloaderClass;
 $loader->register();
-$loader->addNamespace('R301', $_SERVER['DOCUMENT_ROOT']);
+$loader->addNamespace('R301', __DIR__);
 
 use R301\Controleur\RencontreControleur;
 use R301\Modele\Rencontre\RencontreLieu;
@@ -32,25 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// ---- Vérification du token JWT ----
-function verifierToken(): bool {
-    $headers = getallheaders();
-    if (!isset($headers['Authorization'])) return false;
-    $token = str_replace('Bearer ', '', $headers['Authorization']);
-    // TODO: valider le token avec l'API d'auth
-    return !empty($token);
-}
-
-if (!verifierToken()) {
-    http_response_code(401);
-    echo json_encode(['erreur' => 'Token manquant ou invalide']);
+// ---- Vérification du token JWT via API d'auth ----
+$tokenStatus = verify_token_with_auth_api(get_bearer_token());
+if (!$tokenStatus['valid']) {
+    http_response_code($tokenStatus['status']);
+    echo json_encode(['erreur' => $tokenStatus['error']]);
     exit();
 }
 
 // ---- Parsing de l'URL ----
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-// Enlève le préfixe /api/rencontre
-$uri = preg_replace('#^/api/rencontre#', '', $uri);
+// Compatible URL directe /api/rencontre et /r301-main/api/rencontre
+$uri = preg_replace('#^.*?/api/rencontre#', '', $uri);
 $parts = explode('/', trim($uri, '/'));
 
 $id = isset($parts[0]) && is_numeric($parts[0]) ? (int)$parts[0] : null;
@@ -108,7 +102,13 @@ try {
 
     // GET /api/rencontre/{id}
     if ($method === 'GET' && $id !== null) {
-        $rencontre = $ctrl->getRenconterById($id);
+        try {
+            $rencontre = $ctrl->getRenconterById($id);
+        } catch (Throwable $e) {
+            http_response_code(404);
+            echo json_encode(['erreur' => 'Rencontre introuvable']);
+            exit();
+        }
         echo json_encode(rencontreToArray($rencontre));
         exit();
     }

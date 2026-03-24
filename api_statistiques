@@ -7,12 +7,13 @@
  *   GET /api/statistiques/joueurs   -> statistiques de tous les joueurs
  */
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/Psr4AutoloaderClass.php';
+require_once __DIR__ . '/Psr4AutoloaderClass.php';
+require_once __DIR__ . '/api_auth_client.php';
 use R301\Psr4AutoloaderClass;
 
 $loader = new Psr4AutoloaderClass;
 $loader->register();
-$loader->addNamespace('R301', $_SERVER['DOCUMENT_ROOT']);
+$loader->addNamespace('R301', __DIR__);
 
 use R301\Controleur\StatistiquesControleur;
 use R301\Controleur\JoueurControleur;
@@ -27,24 +28,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// ---- Vérification du token JWT ----
-function verifierToken(): bool {
-    $headers = getallheaders();
-    if (!isset($headers['Authorization'])) return false;
-    $token = str_replace('Bearer ', '', $headers['Authorization']);
-    // TODO: valider le token avec l'API d'auth
-    return !empty($token);
-}
-
-if (!verifierToken()) {
-    http_response_code(401);
-    echo json_encode(['erreur' => 'Token manquant ou invalide']);
+// ---- Vérification du token JWT via API d'auth ----
+$tokenStatus = verify_token_with_auth_api(get_bearer_token());
+if (!$tokenStatus['valid']) {
+    http_response_code($tokenStatus['status']);
+    echo json_encode(['erreur' => $tokenStatus['error']]);
     exit();
 }
 
 // ---- Parsing de l'URL ----
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$uri = preg_replace('#^/api/statistiques#', '', $uri);
+$uri = preg_replace('#^.*?/api/statistiques#', '', $uri);
 $sousRoute = trim($uri, '/'); // "equipe" ou "joueurs"
 
 $method = $_SERVER['REQUEST_METHOD'];

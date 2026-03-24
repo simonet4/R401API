@@ -12,12 +12,13 @@
  *   DELETE /api/participation/{id}/performance       -> supprimer la performance
  */
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/Psr4AutoloaderClass.php';
+require_once __DIR__ . '/Psr4AutoloaderClass.php';
+require_once __DIR__ . '/api_auth_client.php';
 use R301\Psr4AutoloaderClass;
 
 $loader = new Psr4AutoloaderClass;
 $loader->register();
-$loader->addNamespace('R301', $_SERVER['DOCUMENT_ROOT']);
+$loader->addNamespace('R301', __DIR__);
 
 use R301\Controleur\ParticipationControleur;
 use R301\Modele\Participation\Poste;
@@ -34,24 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// ---- Vérification du token JWT ----
-function verifierToken(): bool {
-    $headers = getallheaders();
-    if (!isset($headers['Authorization'])) return false;
-    $token = str_replace('Bearer ', '', $headers['Authorization']);
-    // TODO: valider le token avec l'API d'auth
-    return !empty($token);
-}
-
-if (!verifierToken()) {
-    http_response_code(401);
-    echo json_encode(['erreur' => 'Token manquant ou invalide']);
+// ---- Vérification du token JWT via API d'auth ----
+$tokenStatus = verify_token_with_auth_api(get_bearer_token());
+if (!$tokenStatus['valid']) {
+    http_response_code($tokenStatus['status']);
+    echo json_encode(['erreur' => $tokenStatus['error']]);
     exit();
 }
 
 // ---- Parsing de l'URL ----
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$uri = preg_replace('#^/api/participation#', '', $uri);
+$uri = preg_replace('#^.*?/api/participation#', '', $uri);
 $parts = explode('/', trim($uri, '/'));
 
 // Détection des sous-routes
@@ -80,7 +74,7 @@ function participationToArray($p): array {
 }
 
 function feuilleDeMatchToArray($feuille): array {
-    return array_map('participationToArray', $feuille->getParticipations());
+    return array_map('participationToArray', $feuille->getParticipants());
 }
 
 // ---- Routage ----
@@ -178,7 +172,7 @@ try {
             echo json_encode(['erreur' => 'Champ "performance" requis (EXCELLENTE, BONNE, MOYENNE, MAUVAISE, CATASTROPHIQUE)']);
             exit();
         }
-        if (!Performance::fromName($body['performance'])) {
+        if (Performance::fromName($body['performance']) === null) {
             http_response_code(400);
             echo json_encode(['erreur' => 'Valeur invalide. Valeurs acceptées : EXCELLENTE, BONNE, MOYENNE, MAUVAISE, CATASTROPHIQUE']);
             exit();
