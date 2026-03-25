@@ -8,6 +8,10 @@ $method = $_SERVER["REQUEST_METHOD"];
 $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 $path = rtrim($path, "/");
 
+// Support both direct deployment (/login, /verify)
+// and subfolder deployment (/auth-api/login, /auth-api/verify).
+$path = preg_replace('#^.*?/auth-api#', '', $path);
+
 if ($path === "") {
 	$path = "/";
 }
