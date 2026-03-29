@@ -24,10 +24,10 @@ function respond(int $status, array $data): void
 }
 
 function auth_pdo(): PDO {
-	$host = $_SERVER['AUTH_DB_HOST'] ?? getenv('AUTH_DB_HOST');
-$db   = $_SERVER['AUTH_DB_NAME'] ?? getenv('AUTH_DB_NAME');
-$user = $_SERVER['AUTH_DB_USER'] ?? getenv('AUTH_DB_USER');
-$pass = $_SERVER['AUTH_DB_PASS'] ?? getenv('AUTH_DB_PASS');
+	$host = getenv('AUTH_DB_HOST') ?: 'localhost';
+	$dbName = getenv('AUTH_DB_NAME') ?: 'r401_auth';
+	$user = getenv('AUTH_DB_USER') ?: 'root';
+	$pass = getenv('AUTH_DB_PASS') ?: '';
 
 	$pdo = new PDO(
 		"mysql:host={$host};dbname={$dbName};charset=utf8mb4",
