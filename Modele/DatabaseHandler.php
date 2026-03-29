@@ -14,10 +14,10 @@ class DatabaseHandler {
     private readonly string $mdp;
 
     private function __construct(){
-        $defaultServer = getenv('DB_HOST') ?: 'localhost';
-        $defaultDb = getenv('DB_NAME') ?: 'r301';
-        $defaultLogin = getenv('DB_USER') ?: 'r301';
-        $defaultMdp = getenv('DB_PASS') ?: '7z3AgWdX54Zkq5!';
+        $host = $_SERVER['DB_HOST'] ?? getenv('DB_HOST');
+        $db   = $_SERVER['DB_NAME'] ?? getenv('DB_NAME');
+        $user = $_SERVER['DB_USER'] ?? getenv('DB_USER');
+        $pass = $_SERVER['DB_PASS'] ?? getenv('DB_PASS');
 
         $candidats = [
             [$defaultServer, $defaultDb, $defaultLogin, $defaultMdp],
