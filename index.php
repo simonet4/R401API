@@ -18,6 +18,7 @@ session_start();
 $isLoginRoute = strtok($_SERVER["REQUEST_URI"], '?') === '/login';
 if (!$isLoginRoute && !isset($_SESSION['auth_token'])) {
     header('Location: /login');
+    exit();
 }
 ?>
 
@@ -50,7 +51,27 @@ if (!$isLoginRoute && !isset($_SESSION['auth_token'])) {
         </nav>
     <?php endif; ?>
     <?php
-        require_once './Vue' . strtok($_SERVER["REQUEST_URI"],'?') . '.php';
-    } ?>
+    // On récupère l'URI sans les paramètres GET (?id=...)
+    $uri = strtok($_SERVER["REQUEST_URI"], '?');
+
+    // Si l'utilisateur est à la racine, on définit une page par défaut
+    if ($uri === '/' || $uri === '') {
+        $uri = '/tableau_de_bord';
+    }
+
+    // 3. On construit le chemin du fichier
+    $chemin_vue = './Vue' . $uri . '.php';
+
+    // fichier existe ? on l'inclut, sinon 404
+    if (file_exists($chemin_vue)) {
+        require_once $chemin_vue;
+    } else {
+        // erreur 404 si le fichier n'existe pas
+        http_response_code(404);
+        echo "<h1>Erreur 404</h1><p>La page demandée n'existe pas.</p>";
+    }
+    ?>
     </body>
 </html>
+<?php
+}
