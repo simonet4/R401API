@@ -3,10 +3,7 @@
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["username"]) && isset($_POST["password"])) {
     $authLoginUrl = getenv('AUTH_LOGIN_URL');
     if ($authLoginUrl === false || $authLoginUrl === '') {
-        $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-        $scheme = $isHttps ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? '127.0.0.1';
-        $authLoginUrl = $scheme . '://' . $host . '/auth-api/login';
+        $authLoginUrl = 'http://127.0.0.1:8001/login';
     }
 
     $payload = json_encode([

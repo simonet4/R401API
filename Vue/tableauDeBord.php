@@ -1,27 +1,17 @@
 <?php
 
-$statsEquipeResponse = api_get('/api/statistiques/equipe');
-$statsJoueursResponse = api_get('/api/statistiques/joueurs');
+$dashboardResponse = api_get('/api/statistiques/dashboard');
+$dashboardData = ($dashboardResponse['ok'] && is_array($dashboardResponse['data'])) ? $dashboardResponse['data'] : [];
 
-$statsEquipe = ($statsEquipeResponse['ok'] && is_array($statsEquipeResponse['data']))
-    ? $statsEquipeResponse['data']
-    : [];
-$statsJoueurs = ($statsJoueursResponse['ok'] && is_array($statsJoueursResponse['data']))
-    ? $statsJoueursResponse['data']
-    : [];
+$statsEquipe = is_array($dashboardData['equipe'] ?? null) ? $dashboardData['equipe'] : [];
+$statsJoueurs = is_array($dashboardData['joueurs'] ?? null) ? $dashboardData['joueurs'] : [];
 
-$errors = [];
-if (!$statsEquipeResponse['ok']) {
-    $errors[] = (string)($statsEquipeResponse['error'] ?? 'Erreur API statistiques equipe');
-}
-if (!$statsJoueursResponse['ok']) {
-    $errors[] = (string)($statsJoueursResponse['error'] ?? 'Erreur API statistiques joueurs');
-}
+$dashboardError = $dashboardResponse['ok'] ? null : ($dashboardResponse['error'] ?? 'Erreur API dashboard');
 
 ?>
 
-<?php if ($errors !== []): ?>
-    <p><?php echo htmlspecialchars(implode(' | ', $errors)); ?></p>
+<?php if ($dashboardError !== null): ?>
+    <p><?php echo htmlspecialchars((string)$dashboardError); ?></p>
 <?php endif; ?>
 
 <div class="TripleGrid">
