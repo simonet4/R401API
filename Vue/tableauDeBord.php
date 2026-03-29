@@ -1,17 +1,6 @@
 <?php
 
-<?php
-
 $statsEquipeResponse = api_get('/api/statistiques/equipe');
-
-// --- AJOUT TEMPORAIRE POUR TROUVER LE BUG ---
-echo "<h2>🔍 Ce que le Front reçoit vraiment de l'API :</h2>";
-echo "<pre style='background:#f4f4f4; padding:15px; border:2px solid red; color:black;'>";
-var_dump($statsEquipeResponse);
-echo "</pre>";
-die(); // On arrête l'affichage ici pour ne voir que l'erreur
-// --------------------------------------------
-
 $statsJoueursResponse = api_get('/api/statistiques/joueurs');
 
 $statsEquipe = ($statsEquipeResponse['ok'] && is_array($statsEquipeResponse['data']))
