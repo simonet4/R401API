@@ -1,5 +1,7 @@
 <?php
 
+<?php
+
 $statsEquipeResponse = api_get('/api/statistiques/equipe');
 
 // --- AJOUT TEMPORAIRE POUR TROUVER LE BUG ---
