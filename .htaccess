@@ -1,4 +1,8 @@
 RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
 
 # Fichiers statiques servis directement
 RewriteCond %{REQUEST_URI} \.(css|jpg|jpeg|png|gif|ico|js)$ [NC]
