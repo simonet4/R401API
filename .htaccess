@@ -1,15 +1,4 @@
-# 1. On autorise le passage du Token JWT
-SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
-CGIPassAuth On
-
-# 2. On active la réécriture d'URL
 RewriteEngine On
-
-# 3. On redirige les jolies URLs vers les vrais fichiers PHP de l'API
-RewriteRule ^api/joueur(.*)$ api_joueur.php$1 [QSA,L]
-RewriteRule ^api/rencontre(.*)$ api_rencontre.php$1 [QSA,L]
-RewriteRule ^api/participation(.*)$ api_participation.php$1 [QSA,L]
-RewriteRule ^api/statistiques(.*)$ api_statistiques.php$1 [QSA,L]
 
 # Fichiers statiques servis directement
 RewriteCond %{REQUEST_URI} \.(css|jpg|jpeg|png|gif|ico|js)$ [NC]
