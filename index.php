@@ -15,19 +15,9 @@ if (preg_match('/\.(?:png|jpg|jpeg|gif|ico|css|js)\??.*$/', $_SERVER["REQUEST_UR
 } else {
 
 session_start();
-
-// --- AJOUT DE LA MODIFICATION ICI ---
-// Si l'utilisateur arrive sur la racine, on définit le tableau de bord comme page par défaut
-$uri_actuelle = strtok($_SERVER["REQUEST_URI"], '?');
-if ($uri_actuelle === '/' || $uri_actuelle === '/index.php') {
-    $_SERVER["REQUEST_URI"] = '/tableauDeBord'; 
-}
-// ------------------------------------
-
 $isLoginRoute = strtok($_SERVER["REQUEST_URI"], '?') === '/login';
 if (!$isLoginRoute && !isset($_SESSION['auth_token'])) {
     header('Location: /login');
-    exit; // Ajout d'un exit ici par sécurité après une redirection
 }
 ?>
 
@@ -60,7 +50,6 @@ if (!$isLoginRoute && !isset($_SESSION['auth_token'])) {
         </nav>
     <?php endif; ?>
     <?php
-        // On récupère la vue dynamique
         require_once './Vue' . strtok($_SERVER["REQUEST_URI"],'?') . '.php';
     } ?>
     </body>
