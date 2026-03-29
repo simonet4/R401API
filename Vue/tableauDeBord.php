@@ -1,6 +1,11 @@
 <?php
 
 $statsEquipeResponse = api_get('/api/statistiques/equipe');
+
+echo "<pre style='background:#fff; padding:10px; border:2px solid red; position:relative; z-index:9999; color:black;'>";
+var_dump($statsEquipeResponse);
+echo "</pre>";
+die();
 $statsJoueursResponse = api_get('/api/statistiques/joueurs');
 
 $statsEquipe = ($statsEquipeResponse['ok'] && is_array($statsEquipeResponse['data']))
