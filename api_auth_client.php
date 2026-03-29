@@ -29,7 +29,7 @@ function verify_token_with_auth_api(?string $token): array {
         ];
     }
 
-    $authVerifyUrl = getenv('AUTH_VERIFY_URL');
+    $authVerifyUrl = $_SERVER['AUTH_VERIFY_URL'] ?? $_ENV['AUTH_VERIFY_URL'] ?? getenv('AUTH_VERIFY_URL');
     if ($authVerifyUrl === false || $authVerifyUrl === '') {
         $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
         $scheme = $isHttps ? 'https' : 'http';
@@ -43,7 +43,13 @@ function verify_token_with_auth_api(?string $token): array {
             'header' => "Authorization: Bearer {$token}\r\n",
             'ignore_errors' => true,
             'timeout' => 2,
+        ],
+        // --- AJOUT POUR LE SSL ALWAYS DATA ---
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
         ]
+        // -------------------------------------
     ]);
 
     $result = @file_get_contents($authVerifyUrl, false, $context);
