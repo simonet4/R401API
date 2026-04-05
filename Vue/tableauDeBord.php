@@ -24,9 +24,7 @@ $dashboardError = $dashboardResponse['ok'] ? null : ($dashboardResponse['error']
     API error: <?php echo htmlspecialchars((string)($dashboardResponse['error'] ?? 'aucune')); ?><br>
     nbJoueurs: <?php echo count($statsJoueurs); ?><br>
     statsEquipe keys: <?php echo htmlspecialchars(implode(', ', array_keys($statsEquipe))); ?><br>
-    <?php if (!$dashboardResponse['ok']): ?>
-    Data brute: <pre><?php echo htmlspecialchars(json_encode($dashboardResponse['data'] ?? null, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
-    <?php endif; ?>
+    Raw body (200 premiers chars): <pre><?php echo htmlspecialchars(substr((string)($dashboardResponse['raw_body'] ?? ''), 0, 500)); ?></pre>
 </div>
 
 <?php if ($dashboardError !== null): ?>

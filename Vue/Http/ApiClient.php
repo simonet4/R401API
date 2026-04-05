@@ -88,6 +88,19 @@ function api_request(string $method, string $path, ?array $body = null, bool $au
     $decoded = json_decode($raw, true);
     $data = is_array($decoded) ? $decoded : null;
     error_log("[API_CLIENT] Reponse: status=$status, body_len=" . strlen($raw) . ", json_ok=" . ($data !== null ? 'OUI' : 'NON'));
+    if ($data === null && strlen($raw) > 0) {
+        error_log("[API_CLIENT] RAW BODY (premiers 500 chars): " . substr($raw, 0, 500));
+    }
+
+    $result = [
+        'ok' => $status >= 200 && $status < 300,
+        'status' => $status,
+        'data' => $data,
+        'error' => is_array($data)
+            ? (string)($data['erreur'] ?? $data['error'] ?? ('HTTP ' . $status))
+            : ('HTTP ' . $status),
+        'raw_body' => $raw,
+    ];
 
     if ($authRequired && $status === 401) {
         error_log("[API_CLIENT] 401 recu, invalidation session et redirect login");
@@ -100,14 +113,7 @@ function api_request(string $method, string $path, ?array $body = null, bool $au
         }
     }
 
-    return [
-        'ok' => $status >= 200 && $status < 300,
-        'status' => $status,
-        'data' => $data,
-        'error' => is_array($data)
-            ? (string)($data['erreur'] ?? $data['error'] ?? ('HTTP ' . $status))
-            : ('HTTP ' . $status),
-    ];
+    return $result;
 }
 
 function api_get(string $path, bool $authRequired = true): array {
