@@ -21,7 +21,7 @@ class DatabaseHandler {
 
     private function __construct(){
         $defaultServer = self::env('DB_HOST', 'localhost');
-        $defaultDb = self::env('DB_NAME', 'backendalwaysdata_R401');
+        $defaultDb = self::env('DB_NAME', 'backendalwaysdata_r401');
         $defaultLogin = self::env('DB_USER', 'root');
         $defaultMdp = self::env('DB_PASS', '');
 

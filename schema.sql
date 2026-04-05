@@ -1,12 +1,12 @@
 -- =============================================================
--- Schema principal : backendalwaysdata_R401
+-- Schema principal : backendalwaysdata_r401
 -- Contient toutes les tables metier (joueur, commentaire, rencontre, participation)
 -- Utilisé par les API backend (api_joueur, api_rencontre, etc.)
 -- =============================================================
 
-DROP DATABASE IF EXISTS backendalwaysdata_R401;
-CREATE DATABASE backendalwaysdata_R401;
-USE backendalwaysdata_R401;
+DROP DATABASE IF EXISTS backendalwaysdata_r401;
+CREATE DATABASE backendalwaysdata_r401;
+USE backendalwaysdata_r401;
 
 DROP TABLE IF EXISTS participation;
 DROP TABLE IF EXISTS commentaire;

@@ -22,10 +22,33 @@ if ($routePath === '' || $routePath === '/') {
 }
 
 $isLoginRoute = ($routePath === '/login');
+$isLogoutRoute = ($routePath === '/logout');
 
-if (!$isLoginRoute && !isset($_SESSION['auth_token'])) {
+if ($isLogoutRoute) {
+    unset($_SESSION['auth_token'], $_SESSION['auth_role'], $_SESSION['username']);
+    session_destroy();
     header('Location: /login');
     exit();
+}
+
+if (!$isLoginRoute) {
+    // Verifier que le token existe ET n'est pas expire
+    $token = $_SESSION['auth_token'] ?? null;
+    $tokenValide = false;
+    if (is_string($token) && $token !== '') {
+        $parts = explode('.', $token);
+        if (count($parts) === 3) {
+            $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+            if (is_array($payload) && isset($payload['exp']) && time() < (int)$payload['exp']) {
+                $tokenValide = true;
+            }
+        }
+    }
+    if (!$tokenValide) {
+        unset($_SESSION['auth_token'], $_SESSION['auth_role'], $_SESSION['username']);
+        header('Location: /login');
+        exit();
+    }
 }
 ?>
 
@@ -54,6 +77,7 @@ if (!$isLoginRoute && !isset($_SESSION['auth_token'])) {
                     <a href="/rencontre">Liste des rencontres</a>
                 </div>
             </div>
+            <a href="/logout" class="dropbtn" style="margin-left:auto;">Déconnexion</a>
         </nav>
     <?php endif; ?>
     <?php

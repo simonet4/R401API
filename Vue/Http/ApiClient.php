@@ -90,21 +90,13 @@ function api_request(string $method, string $path, ?array $body = null, bool $au
     error_log("[API_CLIENT] Reponse: status=$status, body_len=" . strlen($raw) . ", json_ok=" . ($data !== null ? 'OUI' : 'NON'));
 
     if ($authRequired && $status === 401) {
-        $errorMessage = is_array($data)
-            ? (string)($data['erreur'] ?? $data['error'] ?? '')
-            : '';
+        error_log("[API_CLIENT] 401 recu, invalidation session et redirect login");
+        unset($_SESSION['auth_token'], $_SESSION['auth_role'], $_SESSION['username']);
 
-        if ($errorMessage !== '') {
-            $errorLower = mb_strtolower($errorMessage);
-            if (str_contains($errorLower, 'token invalide') || str_contains($errorLower, 'token manquant')) {
-                unset($_SESSION['auth_token'], $_SESSION['auth_role'], $_SESSION['username']);
-
-                $currentPath = parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '';
-                if ($currentPath !== '/login') {
-                    header('Location: /login');
-                    exit();
-                }
-            }
+        $currentPath = parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '';
+        if ($currentPath !== '/login') {
+            header('Location: /login');
+            exit();
         }
     }
 
