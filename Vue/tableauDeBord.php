@@ -16,6 +16,19 @@ $dashboardError = $dashboardResponse['ok'] ? null : ($dashboardResponse['error']
 
 ?>
 
+<!-- DEBUG TEMPORAIRE : a supprimer quand le dashboard fonctionne -->
+<div style="background:#ffe0e0;border:1px solid #c00;padding:10px;margin:10px;font-size:12px;font-family:monospace;">
+    <strong>DEBUG Dashboard</strong><br>
+    API status: <?php echo htmlspecialchars((string)($dashboardResponse['status'] ?? '?')); ?><br>
+    API ok: <?php echo $dashboardResponse['ok'] ? 'OUI' : 'NON'; ?><br>
+    API error: <?php echo htmlspecialchars((string)($dashboardResponse['error'] ?? 'aucune')); ?><br>
+    nbJoueurs: <?php echo count($statsJoueurs); ?><br>
+    statsEquipe keys: <?php echo htmlspecialchars(implode(', ', array_keys($statsEquipe))); ?><br>
+    <?php if (!$dashboardResponse['ok']): ?>
+    Data brute: <pre><?php echo htmlspecialchars(json_encode($dashboardResponse['data'] ?? null, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
+    <?php endif; ?>
+</div>
+
 <?php if ($dashboardError !== null): ?>
     <p><?php echo htmlspecialchars((string)$dashboardError); ?></p>
 <?php endif; ?>
