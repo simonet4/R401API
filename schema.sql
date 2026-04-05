@@ -1,13 +1,17 @@
-create database r301;
+-- =============================================================
+-- Schema principal : backendalwaysdata_R401
+-- Contient toutes les tables metier (joueur, commentaire, rencontre, participation)
+-- Utilisé par les API backend (api_joueur, api_rencontre, etc.)
+-- =============================================================
 
-CREATE USER 'r301'@'localhost' IDENTIFIED BY '7z3AgWdX54Zkq5!';
-GRANT ALL PRIVILEGES ON r301.* TO 'r301'@'localhost';
-FLUSH PRIVILEGES;
+DROP DATABASE IF EXISTS backendalwaysdata_R401;
+CREATE DATABASE backendalwaysdata_R401;
+USE backendalwaysdata_R401;
 
-drop table if exists participation;
-drop table if exists commentaire;
-drop table if exists joueur;
-drop table if exists rencontre;
+DROP TABLE IF EXISTS participation;
+DROP TABLE IF EXISTS commentaire;
+DROP TABLE IF EXISTS joueur;
+DROP TABLE IF EXISTS rencontre;
 
 create table joueur (
                         joueur_id int not null auto_increment,

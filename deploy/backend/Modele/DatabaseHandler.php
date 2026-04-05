@@ -14,21 +14,30 @@ class DatabaseHandler {
     private readonly string $mdp;
 
     private function __construct(){
-        $this->server = getenv('DB_HOST') ?: 'localhost';
-        $this->db     = getenv('DB_NAME') ?: 'r301';
-        $this->login  = getenv('DB_USER') ?: 'r301';
-        $this->mdp    = getenv('DB_PASS') ?: '';
+        $defaultServer = getenv('DB_HOST') ?: 'localhost';
+        $defaultDb = getenv('DB_NAME') ?: 'backendalwaysdata_R401';
+        $defaultLogin = getenv('DB_USER') ?: 'root';
+        $defaultMdp = getenv('DB_PASS') ?: '';
+
+        error_log("[DB] Tentative connexion: host={$defaultServer}, db={$defaultDb}, user={$defaultLogin}");
 
         try {
             $pdo = new PDO(
-                "mysql:host={$this->server};dbname={$this->db};charset=utf8mb4",
-                $this->login,
-                $this->mdp
+                "mysql:host={$defaultServer};dbname={$defaultDb};charset=utf8mb4",
+                $defaultLogin,
+                $defaultMdp
             );
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            $this->server = $defaultServer;
+            $this->db = $defaultDb;
+            $this->login = $defaultLogin;
+            $this->mdp = $defaultMdp;
             $this->linkpdo = $pdo;
+            error_log("[DB] Connexion reussie a {$defaultDb}");
         } catch (Exception $e) {
-            die("Erreur BDD : {$e->getMessage()}. Configurez DB_HOST, DB_NAME, DB_USER, DB_PASS.");
+            error_log("[DB] ERREUR connexion: " . $e->getMessage());
+            die("Erreur BDD : " . $e->getMessage() . ". Verifiez DB_HOST, DB_NAME, DB_USER, DB_PASS. Base tentee: {$defaultDb}");
         }
     }
 

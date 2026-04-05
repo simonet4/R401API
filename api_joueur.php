@@ -29,10 +29,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$tokenStatus = verify_token_with_auth_api(get_bearer_token());
+error_log("[API_JOUEUR] Requete recue: method={$_SERVER['REQUEST_METHOD']}, uri={$_SERVER['REQUEST_URI']}");
+
+$bearerToken = get_bearer_token();
+error_log("[API_JOUEUR] Bearer token: " . ($bearerToken ? substr($bearerToken, 0, 20) . '...' : 'ABSENT'));
+
+$tokenStatus = verify_token_with_auth_api($bearerToken);
+error_log("[API_JOUEUR] Token status: valid=" . ($tokenStatus['valid'] ? 'OUI' : 'NON') . ", error=" . ($tokenStatus['error'] ?? 'aucune'));
+
 if (!$tokenStatus['valid']) {
     http_response_code($tokenStatus['status']);
-    echo json_encode(['erreur' => $tokenStatus['error']]);
+    echo json_encode([
+        'erreur' => $tokenStatus['error'],
+        'debug_auth' => $tokenStatus['debug'] ?? [],
+    ]);
     exit();
 }
 

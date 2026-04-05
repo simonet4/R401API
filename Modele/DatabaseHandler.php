@@ -15,40 +15,30 @@ class DatabaseHandler {
 
     private function __construct(){
         $defaultServer = getenv('DB_HOST') ?: 'localhost';
-        $defaultDb = getenv('DB_NAME') ?: 'r301';
-        $defaultLogin = getenv('DB_USER') ?: 'r301';
-        $defaultMdp = getenv('DB_PASS') ?: '7z3AgWdX54Zkq5!';
+        $defaultDb = getenv('DB_NAME') ?: 'backendalwaysdata_R401';
+        $defaultLogin = getenv('DB_USER') ?: 'root';
+        $defaultMdp = getenv('DB_PASS') ?: '';
 
-        $candidats = [
-            [$defaultServer, $defaultDb, $defaultLogin, $defaultMdp],
-            ['localhost', 'r301', 'root', ''],
-            ['localhost', 'r301', 'root', 'root'],
-        ];
+        error_log("[DB] Tentative connexion: host={$defaultServer}, db={$defaultDb}, user={$defaultLogin}");
 
-        $derniereException = null;
+        try {
+            $pdo = new PDO(
+                "mysql:host={$defaultServer};dbname={$defaultDb};charset=utf8mb4",
+                $defaultLogin,
+                $defaultMdp
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        foreach ($candidats as [$server, $db, $login, $mdp]) {
-            try {
-                $pdo = new PDO(
-                    "mysql:host={$server};dbname={$db};charset=utf8mb4",
-                    $login,
-                    $mdp
-                );
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-                $this->server = $server;
-                $this->db = $db;
-                $this->login = $login;
-                $this->mdp = $mdp;
-                $this->linkpdo = $pdo;
-                return;
-            } catch (Exception $e) {
-                $derniereException = $e;
-            }
+            $this->server = $defaultServer;
+            $this->db = $defaultDb;
+            $this->login = $defaultLogin;
+            $this->mdp = $defaultMdp;
+            $this->linkpdo = $pdo;
+            error_log("[DB] Connexion reussie a {$defaultDb}");
+        } catch (Exception $e) {
+            error_log("[DB] ERREUR connexion: " . $e->getMessage());
+            die("Erreur BDD : " . $e->getMessage() . ". Verifiez DB_HOST, DB_NAME, DB_USER, DB_PASS. Base tentee: {$defaultDb}");
         }
-
-        $message = $derniereException ? $derniereException->getMessage() : 'Connexion impossible';
-        die("Erreur : {$message}. Configurez DB_HOST, DB_NAME, DB_USER, DB_PASS ou créez la base r301.");
     }
 
     public static function getInstance(): DatabaseHandler

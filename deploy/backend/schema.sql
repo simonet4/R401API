@@ -1,11 +1,17 @@
--- Schema principal (tables equipe)
--- Sur Alwaysdata, la base et l'utilisateur sont deja crees par le panneau admin.
--- Executez le reste du fichier via phpMyAdmin.
+-- =============================================================
+-- Schema principal : backendalwaysdata_R401
+-- Contient toutes les tables metier (joueur, commentaire, rencontre, participation)
+-- Utilisé par les API backend (api_joueur, api_rencontre, etc.)
+-- =============================================================
 
-drop table if exists participation;
-drop table if exists commentaire;
-drop table if exists joueur;
-drop table if exists rencontre;
+DROP DATABASE IF EXISTS backendalwaysdata_R401;
+CREATE DATABASE backendalwaysdata_R401;
+USE backendalwaysdata_R401;
+
+DROP TABLE IF EXISTS participation;
+DROP TABLE IF EXISTS commentaire;
+DROP TABLE IF EXISTS joueur;
+DROP TABLE IF EXISTS rencontre;
 
 create table joueur (
                         joueur_id int not null auto_increment,

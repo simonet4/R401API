@@ -36,10 +36,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // ---- Vérification du token JWT via API d'auth ----
-$tokenStatus = verify_token_with_auth_api(get_bearer_token());
+$bearerToken = get_bearer_token();
+error_log("[API_PARTICIPATION] Bearer token: " . ($bearerToken ? 'present' : 'ABSENT'));
+
+$tokenStatus = verify_token_with_auth_api($bearerToken);
 if (!$tokenStatus['valid']) {
     http_response_code($tokenStatus['status']);
-    echo json_encode(['erreur' => $tokenStatus['error']]);
+    echo json_encode([
+        'erreur' => $tokenStatus['error'],
+        'debug_auth' => $tokenStatus['debug'] ?? [],
+    ]);
     exit();
 }
 
