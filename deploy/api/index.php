@@ -16,6 +16,8 @@ if ($method === 'OPTIONS') {
 
 $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 $path = rtrim($path, "/");
+// Supprimer le prefixe /auth-api si present (deploiement dans un sous-dossier)
+$path = preg_replace('#^.*/auth-api#', '', $path);
 
 if ($path === "") {
 	$path = "/";

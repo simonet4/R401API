@@ -31,7 +31,10 @@ function verify_token_with_auth_api(?string $token): array {
 
     $authVerifyUrl = getenv('AUTH_VERIFY_URL');
     if ($authVerifyUrl === false || $authVerifyUrl === '') {
-        $authVerifyUrl = 'http://127.0.0.1:8001/verify';
+        $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $scheme = $isHttps ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $authVerifyUrl = $scheme . '://' . $host . '/auth-api/verify';
     }
 
     $context = stream_context_create([
