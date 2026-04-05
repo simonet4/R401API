@@ -1,0 +1,13 @@
+RewriteEngine On
+
+Options -MultiViews
+
+# Preflight CORS
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^ - [R=200,L]
+
+# Routes API
+RewriteRule ^api/rencontre(/.*)?$ api_rencontre.php [QSA,L]
+RewriteRule ^api/participation(/.*)?$ api_participation.php [QSA,L]
+RewriteRule ^api/joueur(/.*)?$ api_joueur.php [QSA,L]
+RewriteRule ^api/statistiques(/.*)?$ api_statistiques.php [QSA,L]

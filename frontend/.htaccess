@@ -1,0 +1,11 @@
+RewriteEngine On
+
+# Fichiers statiques servis directement
+RewriteCond %{REQUEST_URI} \.(css|jpg|jpeg|png|gif|ico|js)$ [NC]
+RewriteRule ^ - [L]
+
+# Front-controller : tout vers index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/index\.php
+RewriteRule ^ index.php [QSA,L]

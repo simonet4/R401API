@@ -1,0 +1,68 @@
+<?php
+
+$dashboardResponse = api_get('/api/statistiques/dashboard');
+$dashboardData = ($dashboardResponse['ok'] && is_array($dashboardResponse['data'])) ? $dashboardResponse['data'] : [];
+
+$statsEquipe = is_array($dashboardData['equipe'] ?? null) ? $dashboardData['equipe'] : [];
+$statsJoueurs = is_array($dashboardData['joueurs'] ?? null) ? $dashboardData['joueurs'] : [];
+
+$dashboardError = $dashboardResponse['ok'] ? null : ($dashboardResponse['error'] ?? 'Erreur API dashboard');
+
+?>
+
+<?php if ($dashboardError !== null): ?>
+    <p><?php echo htmlspecialchars((string)$dashboardError); ?></p>
+<?php endif; ?>
+
+<div class="TripleGrid">
+    <div>
+        <h1><?php echo (int)($statsEquipe['nbVictoires'] ?? 0); ?></h1>
+        <p> matchs gagnés</p>
+    </div>
+    <div>
+        <h1><?php echo (int)($statsEquipe['nbNuls'] ?? 0); ?></h1>
+        <p> matchs nuls</p>
+    </div>
+    <div>
+        <h1><?php echo (int)($statsEquipe['nbDefaites'] ?? 0); ?></h1>
+        <p> matchs perdus</p>
+    </div>
+    <div>
+        <h1><?php echo (int)($statsEquipe['pourcentageDeVictoires'] ?? 0); ?>%</h1>
+        <p> de matchs gagnés</p>
+    </div>
+    <div>
+        <h1><?php echo (int)($statsEquipe['pourcentageDeNuls'] ?? 0); ?>%</h1>
+        <p> de matchs nuls</p>
+    </div>
+    <div>
+        <h1><?php echo (int)($statsEquipe['pourcentageDeDefaites'] ?? 0); ?>%</h1>
+        <p> de matchs perdus</p>
+    </div>
+</div>
+<div class="overflow">
+    <table >
+        <tr>
+            <th style="width:15%;">Joueur</th>
+            <th style="width:7%;">Statut</th>
+            <th style="width:7%;">Poste le plus performant</th>
+            <th style="width:7%;">Nombre de matchs consécutifs</th>
+            <th style="width:7%;">Nombre titularisations</th>
+            <th style="width:7%;">Nombre remplaçants</th>
+            <th style="width:7%;">Moyenne évaluations</th>
+            <th style="width:7%;">Pourcentage gagnés</th>
+        </tr>
+        <?php foreach ($statsJoueurs as $joueur): ?>
+        <tr>
+            <td><?php echo htmlspecialchars(trim((string)($joueur['nom'] ?? '') . ' ' . (string)($joueur['prenom'] ?? ''))); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['statutActuel'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['posteLePlusPerformant'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['nbRencontresConsecutives'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['nbTitularisations'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['nbRemplacant'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['moyenneDesEvaluations'] ?? '')); ?></td>
+            <td><?php echo htmlspecialchars((string)($joueur['pourcentageDeMatchsGagnes'] ?? '')); ?></td>
+        </tr>
+        <?php endforeach; ?>
+    </table>
+</div>
