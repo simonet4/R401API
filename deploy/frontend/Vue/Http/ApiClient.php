@@ -99,7 +99,6 @@ function api_request(string $method, string $path, ?array $body = null, bool $au
         'error' => is_array($data)
             ? (string)($data['erreur'] ?? $data['error'] ?? ('HTTP ' . $status))
             : ('HTTP ' . $status),
-        'raw_body' => $raw,
     ];
 
     if ($authRequired && $status === 401) {
