@@ -2,18 +2,18 @@
 
 Ce projet est organisé en **trois parties indépendantes**, chacune à déployer sur un compte Alwaysdata séparé.
 
-| Dossier     | Rôle                         | Exemple de compte Alwaysdata       |
-|-------------|------------------------------|------------------------------------|
-| `frontend/` | Interface web (MVC PHP)      | `victor-front.alwaysdata.net`      |
-| `backend/`  | API REST équipe (données)    | `victor-back.alwaysdata.net`       |
-| `api/`      | API d'authentification (JWT) | `victor-api.alwaysdata.net`        |
+| Dossier             | Rôle                         | Exemple de compte Alwaysdata       |
+|---------------------|------------------------------|------------------------------------||
+| `deploy/frontend/`  | Interface web (MVC PHP)      | `victor-front.alwaysdata.net`      |
+| `deploy/backend/`   | API REST équipe (données)    | `victor-back.alwaysdata.net`       |
+| `deploy/api/`       | API d'authentification (JWT) | `victor-api.alwaysdata.net`        |
 
 ---
 
-## 1. Compte API d'authentification (`api/`)
+## 1. Compte API d'authentification (`deploy/api/`)
 
 ### Fichiers à déployer
-Copiez tout le contenu du dossier `api/` dans `/home/victor-api/www/` de votre compte Alwaysdata.
+Copiez tout le contenu du dossier `deploy/api/` dans `/home/victor-api/www/` de votre compte Alwaysdata.
 
 ### Base de données
 1. Créez une base MySQL depuis le panneau Alwaysdata
@@ -40,10 +40,10 @@ Visitez `https://victor-api.alwaysdata.net/ping` — vous devez obtenir :
 
 ---
 
-## 2. Compte Backend API équipe (`backend/`)
+## 2. Compte Backend API équipe (`deploy/backend/`)
 
 ### Fichiers à déployer
-Copiez tout le contenu du dossier `backend/` dans `/home/victor-back/www/` de votre compte Alwaysdata.
+Copiez tout le contenu du dossier `deploy/backend/` dans `/home/victor-back/www/` de votre compte Alwaysdata.
 
 ### Base de données
 1. Créez une base MySQL depuis le panneau Alwaysdata
@@ -66,10 +66,10 @@ Visitez `https://victor-back.alwaysdata.net/api/rencontre` — vous devez obteni
 
 ---
 
-## 3. Compte Frontend (`frontend/`)
+## 3. Compte Frontend (`deploy/frontend/`)
 
 ### Fichiers à déployer
-Copiez tout le contenu du dossier `frontend/` dans `/home/victor-front/www/` de votre compte Alwaysdata.
+Copiez tout le contenu du dossier `deploy/frontend/` dans `/home/victor-front/www/` de votre compte Alwaysdata.
 
 ### Pas de base de données nécessaire
 Le frontend ne se connecte pas directement à la base de données.
