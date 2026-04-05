@@ -20,24 +20,6 @@ function get_bearer_token(): ?string {
     return trim($authorization);
 }
 
-// ---- Verification locale du JWT (pas d'appel HTTP) ----
-
-function _auth_base64url_decode(string $data): string {
-    $padding = strlen($data) % 4;
-    if ($padding > 0) {
-        $data .= str_repeat('=', 4 - $padding);
-    }
-    return base64_decode(strtr($data, '-_', '+/'));
-}
-
-function _auth_jwt_secret(): string {
-    $secret = getenv('AUTH_JWT_SECRET');
-    if ($secret === false || $secret === '') {
-        $secret = 'CHANGE_ME_SUPER_SECRET_AUTH_ONLY';
-    }
-    return $secret;
-}
-
 function verify_token_with_auth_api(?string $token): array {
     if ($token === null || $token === '') {
         return [
@@ -47,49 +29,50 @@ function verify_token_with_auth_api(?string $token): array {
         ];
     }
 
-    $parts = explode('.', $token);
-    if (count($parts) !== 3) {
+    $authVerifyUrl = getenv('AUTH_VERIFY_URL');
+    if ($authVerifyUrl === false || $authVerifyUrl === '') {
+        $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $scheme = $isHttps ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $authVerifyUrl = $scheme . '://' . $host . '/auth-api/verify';
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => "Authorization: Bearer {$token}\r\n",
+            'ignore_errors' => true,
+            'timeout' => 2,
+        ]
+    ]);
+
+    $result = @file_get_contents($authVerifyUrl, false, $context);
+
+    $statusCode = 500;
+    if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $matches)) {
+        $statusCode = (int)$matches[1];
+    }
+
+    if ($result === false) {
+        return [
+            'valid' => false,
+            'status' => 503,
+            'error' => 'Auth API inaccessible',
+        ];
+    }
+
+    $decoded = json_decode($result, true);
+    if ($statusCode !== 200 || !is_array($decoded) || !($decoded['valid'] ?? false)) {
         return [
             'valid' => false,
             'status' => 401,
             'error' => 'Token invalide',
-        ];
-    }
-
-    [$encodedHeader, $encodedPayload, $encodedSignature] = $parts;
-    $unsignedToken = $encodedHeader . '.' . $encodedPayload;
-
-    $expectedSignature = hash_hmac('sha256', $unsignedToken, _auth_jwt_secret(), true);
-    $givenSignature = _auth_base64url_decode($encodedSignature);
-
-    if (!hash_equals($expectedSignature, $givenSignature)) {
-        return [
-            'valid' => false,
-            'status' => 401,
-            'error' => 'Token invalide',
-        ];
-    }
-
-    $payload = json_decode(_auth_base64url_decode($encodedPayload), true);
-    if (!is_array($payload)) {
-        return [
-            'valid' => false,
-            'status' => 401,
-            'error' => 'Token invalide',
-        ];
-    }
-
-    if (!isset($payload['exp']) || time() >= (int)$payload['exp']) {
-        return [
-            'valid' => false,
-            'status' => 401,
-            'error' => 'Token expire',
         ];
     }
 
     return [
         'valid' => true,
         'status' => 200,
-        'payload' => $payload,
+        'payload' => $decoded['payload'] ?? [],
     ];
 }

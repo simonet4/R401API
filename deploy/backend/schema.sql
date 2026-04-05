@@ -1,23 +1,11 @@
-create database r301;
-
-CREATE USER 'r301'@'localhost' IDENTIFIED BY '7z3AgWdX54Zkq5!';
-GRANT ALL PRIVILEGES ON r301.* TO 'r301'@'localhost';
-FLUSH PRIVILEGES;
+-- Schema principal (tables equipe)
+-- Sur Alwaysdata, la base et l'utilisateur sont deja crees par le panneau admin.
+-- Executez le reste du fichier via phpMyAdmin.
 
 drop table if exists participation;
 drop table if exists commentaire;
 drop table if exists joueur;
 drop table if exists rencontre;
-drop table if exists utilisateur;
-
-create table utilisateur (
-    id int auto_increment primary key,
-    username varchar(100) not null unique,
-    password_hash varchar(255) not null,
-    role varchar(50) not null default 'joueur'
-);
-
-insert into utilisateur (username, password_hash, role) values ('admin', 'admin', 'admin');
 
 create table joueur (
                         joueur_id int not null auto_increment,

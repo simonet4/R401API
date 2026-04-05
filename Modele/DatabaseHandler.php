@@ -15,9 +15,9 @@ class DatabaseHandler {
 
     private function __construct(){
         $defaultServer = getenv('DB_HOST') ?: 'localhost';
-        $defaultDb = getenv('DB_NAME') ?: 'simsar_r301';
-        $defaultLogin = getenv('DB_USER') ?: 'root';
-        $defaultMdp = getenv('DB_PASS') ?: '';
+        $defaultDb = getenv('DB_NAME') ?: 'r301';
+        $defaultLogin = getenv('DB_USER') ?: 'r301';
+        $defaultMdp = getenv('DB_PASS') ?: '7z3AgWdX54Zkq5!';
 
         $candidats = [
             [$defaultServer, $defaultDb, $defaultLogin, $defaultMdp],
