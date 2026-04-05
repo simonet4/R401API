@@ -80,10 +80,16 @@ try {
     }
 
     // Toutes les autres routes restent protégées.
-    $tokenStatus = verify_token_with_auth_api(get_bearer_token());
+    $bearerToken = get_bearer_token();
+    error_log("[API_RENCONTRE] Bearer token: " . ($bearerToken ? 'present' : 'ABSENT'));
+    $tokenStatus = verify_token_with_auth_api($bearerToken);
+    error_log("[API_RENCONTRE] Token status: valid=" . ($tokenStatus['valid'] ? 'OUI' : 'NON') . ", error=" . ($tokenStatus['error'] ?? 'aucune'));
     if (!$tokenStatus['valid']) {
         http_response_code($tokenStatus['status']);
-        echo json_encode(['erreur' => $tokenStatus['error']]);
+        echo json_encode([
+            'erreur' => $tokenStatus['error'],
+            'debug_auth' => $tokenStatus['debug'] ?? [],
+        ]);
         exit();
     }
 

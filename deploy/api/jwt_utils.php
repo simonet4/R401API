@@ -15,6 +15,9 @@ function base64url_decode(string $data): string {
 function jwt_secret(): string {
     $secret = getenv('AUTH_JWT_SECRET');
     if ($secret === false || $secret === '') {
+        $secret = $_SERVER['AUTH_JWT_SECRET'] ?? $_ENV['AUTH_JWT_SECRET'] ?? '';
+    }
+    if ($secret === '') {
         $secret = 'CHANGE_ME_SUPER_SECRET_AUTH_ONLY';
     }
     return $secret;

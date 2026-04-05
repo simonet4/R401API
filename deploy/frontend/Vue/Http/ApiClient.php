@@ -13,6 +13,9 @@ function app_base_path(): string {
 
 function api_base_url(): string {
     $configured = getenv('TEAM_API_BASE_URL');
+    if ($configured === false || $configured === '') {
+        $configured = $_SERVER['TEAM_API_BASE_URL'] ?? $_ENV['TEAM_API_BASE_URL'] ?? '';
+    }
     if (is_string($configured) && $configured !== '') {
         return rtrim($configured, '/');
     }
@@ -30,6 +33,7 @@ function api_request(string $method, string $path, ?array $body = null, bool $au
     }
 
     $url = api_base_url() . $path;
+    error_log("[API_CLIENT] Requete: method=$method, url=$url, authRequired=" . ($authRequired ? 'OUI' : 'NON'));
 
     $headers = [
         'Content-Type: application/json',
@@ -72,16 +76,18 @@ function api_request(string $method, string $path, ?array $body = null, bool $au
     }
 
     if ($raw === false) {
+        error_log("[API_CLIENT] ECHEC file_get_contents pour $url");
         return [
             'ok' => false,
             'status' => 503,
             'data' => null,
-            'error' => 'API inaccessible',
+            'error' => 'API inaccessible (url=' . $url . ')',
         ];
     }
 
     $decoded = json_decode($raw, true);
     $data = is_array($decoded) ? $decoded : null;
+    error_log("[API_CLIENT] Reponse: status=$status, body_len=" . strlen($raw) . ", json_ok=" . ($data !== null ? 'OUI' : 'NON'));
 
     if ($authRequired && $status === 401) {
         $errorMessage = is_array($data)

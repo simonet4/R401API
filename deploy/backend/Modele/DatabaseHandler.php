@@ -13,11 +13,17 @@ class DatabaseHandler {
     private readonly string $login;
     private readonly string $mdp;
 
+    private static function env(string $key, string $default = ''): string {
+        $val = getenv($key);
+        if ($val !== false && $val !== '') return $val;
+        return $_SERVER[$key] ?? $_ENV[$key] ?? $default;
+    }
+
     private function __construct(){
-        $defaultServer = getenv('DB_HOST') ?: 'localhost';
-        $defaultDb = getenv('DB_NAME') ?: 'backendalwaysdata_R401';
-        $defaultLogin = getenv('DB_USER') ?: 'root';
-        $defaultMdp = getenv('DB_PASS') ?: '';
+        $defaultServer = self::env('DB_HOST', 'localhost');
+        $defaultDb = self::env('DB_NAME', 'backendalwaysdata_R401');
+        $defaultLogin = self::env('DB_USER', 'root');
+        $defaultMdp = self::env('DB_PASS', '');
 
         error_log("[DB] Tentative connexion: host={$defaultServer}, db={$defaultDb}, user={$defaultLogin}");
 

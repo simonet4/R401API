@@ -3,6 +3,9 @@
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["username"]) && isset($_POST["password"])) {
     $authLoginUrl = getenv('AUTH_LOGIN_URL');
     if ($authLoginUrl === false || $authLoginUrl === '') {
+        $authLoginUrl = $_SERVER['AUTH_LOGIN_URL'] ?? $_ENV['AUTH_LOGIN_URL'] ?? '';
+    }
+    if ($authLoginUrl === false || $authLoginUrl === '') {
         $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
         $scheme = $isHttps ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';

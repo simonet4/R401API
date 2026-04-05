@@ -13,6 +13,9 @@ function app_base_path(): string {
 
 function api_base_url(): string {
     $configured = getenv('TEAM_API_BASE_URL');
+    if ($configured === false || $configured === '') {
+        $configured = $_SERVER['TEAM_API_BASE_URL'] ?? $_ENV['TEAM_API_BASE_URL'] ?? '';
+    }
     if (is_string($configured) && $configured !== '') {
         return rtrim($configured, '/');
     }

@@ -31,11 +31,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+error_log("[API_STATS] Requete recue: method={$_SERVER['REQUEST_METHOD']}, uri={$_SERVER['REQUEST_URI']}");
+
 // ---- Vérification du token JWT via API d'auth ----
-$tokenStatus = verify_token_with_auth_api(get_bearer_token());
+$bearerToken = get_bearer_token();
+error_log("[API_STATS] Bearer token: " . ($bearerToken ? substr($bearerToken, 0, 20) . '...' : 'ABSENT'));
+
+$tokenStatus = verify_token_with_auth_api($bearerToken);
+error_log("[API_STATS] Token status: valid=" . ($tokenStatus['valid'] ? 'OUI' : 'NON') . ", error=" . ($tokenStatus['error'] ?? 'aucune'));
+
 if (!$tokenStatus['valid']) {
     http_response_code($tokenStatus['status']);
-    echo json_encode(['erreur' => $tokenStatus['error']]);
+    echo json_encode([
+        'erreur' => $tokenStatus['error'],
+        'debug_auth' => $tokenStatus['debug'] ?? [],
+    ]);
     exit();
 }
 
@@ -83,44 +93,60 @@ try {
     if ($sousRoute === 'dashboard') {
         $payload = is_array($tokenStatus['payload'] ?? null) ? $tokenStatus['payload'] : [];
         $role = strtolower((string)($payload['role'] ?? ''));
+        error_log("[API_STATS] Dashboard: role={$role}");
         if ($role !== 'joueur' && $role !== 'admin') {
             http_response_code(403);
-            echo json_encode(['erreur' => 'Accès interdit']);
+            echo json_encode(['erreur' => 'Accès interdit', 'debug_role' => $role]);
             exit();
         }
 
-        $statsEquipe = $ctrl->getStatistiquesEquipe();
-        $statsJoueurs = $ctrl->getStatistiquesJoueurs();
-        $joueurs = JoueurControleur::getInstance()->listerTousLesJoueurs();
+        try {
+            error_log("[API_STATS] Dashboard: chargement statsEquipe...");
+            $statsEquipe = $ctrl->getStatistiquesEquipe();
+            error_log("[API_STATS] Dashboard: chargement statsJoueurs...");
+            $statsJoueurs = $ctrl->getStatistiquesJoueurs();
+            error_log("[API_STATS] Dashboard: chargement joueurs...");
+            $joueurs = JoueurControleur::getInstance()->listerTousLesJoueurs();
+            error_log("[API_STATS] Dashboard: " . count($joueurs) . " joueurs charges");
 
-        $joueursPayload = [];
-        foreach ($joueurs as $joueur) {
-            $joueursPayload[] = [
-                'joueurId'                    => $joueur->getJoueurId(),
-                'nom'                         => $joueur->getNom(),
-                'prenom'                      => $joueur->getPrenom(),
-                'statutActuel'                => $joueur->getStatut()?->name,
-                'moyenneDesEvaluations'       => $statsJoueurs->moyenneDesEvaluations($joueur),
-                'nbTitularisations'           => $statsJoueurs->nbTitularisations($joueur),
-                'nbRemplacant'                => $statsJoueurs->nbRemplacant($joueur),
-                'nbRencontresConsecutives'    => $statsJoueurs->nbRencontresConsecutivesADate($joueur),
-                'postePrefere'                => $statsJoueurs->posteLePlusPerformant($joueur)?->name,
-                'posteLePlusPerformant'       => $statsJoueurs->posteLePlusPerformant($joueur)?->name,
-                'pourcentageDeMatchsGagnes'   => $statsJoueurs->pourcentageDeMatchsGagnes($joueur),
-            ];
+            $joueursPayload = [];
+            foreach ($joueurs as $joueur) {
+                $joueursPayload[] = [
+                    'joueurId'                    => $joueur->getJoueurId(),
+                    'nom'                         => $joueur->getNom(),
+                    'prenom'                      => $joueur->getPrenom(),
+                    'statutActuel'                => $joueur->getStatut()?->name,
+                    'moyenneDesEvaluations'       => $statsJoueurs->moyenneDesEvaluations($joueur),
+                    'nbTitularisations'           => $statsJoueurs->nbTitularisations($joueur),
+                    'nbRemplacant'                => $statsJoueurs->nbRemplacant($joueur),
+                    'nbRencontresConsecutives'    => $statsJoueurs->nbRencontresConsecutivesADate($joueur),
+                    'postePrefere'                => $statsJoueurs->posteLePlusPerformant($joueur)?->name,
+                    'posteLePlusPerformant'       => $statsJoueurs->posteLePlusPerformant($joueur)?->name,
+                    'pourcentageDeMatchsGagnes'   => $statsJoueurs->pourcentageDeMatchsGagnes($joueur),
+                ];
+            }
+
+            error_log("[API_STATS] Dashboard: OK, envoi reponse");
+            echo json_encode([
+                'equipe' => [
+                    'nbVictoires'            => $statsEquipe->nbVictoires(),
+                    'nbNuls'                 => $statsEquipe->nbNuls(),
+                    'nbDefaites'             => $statsEquipe->nbDefaites(),
+                    'pourcentageDeVictoires' => $statsEquipe->pourcentageDeVictoires(),
+                    'pourcentageDeNuls'      => $statsEquipe->pourcentageDeNuls(),
+                    'pourcentageDeDefaites'  => $statsEquipe->pourcentageDeDefaites(),
+                ],
+                'joueurs' => $joueursPayload,
+            ]);
+        } catch (\Throwable $e) {
+            error_log("[API_STATS] Dashboard ERREUR: " . $e->getMessage() . " dans " . $e->getFile() . ":" . $e->getLine());
+            http_response_code(500);
+            echo json_encode([
+                'erreur' => 'Erreur interne dashboard',
+                'debug_message' => $e->getMessage(),
+                'debug_file' => basename($e->getFile()) . ':' . $e->getLine(),
+            ]);
         }
-
-        echo json_encode([
-            'equipe' => [
-                'nbVictoires'            => $statsEquipe->nbVictoires(),
-                'nbNuls'                 => $statsEquipe->nbNuls(),
-                'nbDefaites'             => $statsEquipe->nbDefaites(),
-                'pourcentageDeVictoires' => $statsEquipe->pourcentageDeVictoires(),
-                'pourcentageDeNuls'      => $statsEquipe->pourcentageDeNuls(),
-                'pourcentageDeDefaites'  => $statsEquipe->pourcentageDeDefaites(),
-            ],
-            'joueurs' => $joueursPayload,
-        ]);
         exit();
     }
 
