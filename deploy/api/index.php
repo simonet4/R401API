@@ -30,22 +30,6 @@ function respond(int $status, array $data): void
 	exit;
 }
 
-function auth_pdo(): PDO {
-	$host = getenv('AUTH_DB_HOST') ?: (getenv('DB_HOST') ?: 'localhost');
-	$dbName = getenv('AUTH_DB_NAME') ?: (getenv('DB_NAME') ?: 'simsar_r301');
-	$user = getenv('AUTH_DB_USER') ?: (getenv('DB_USER') ?: 'root');
-	$pass = getenv('AUTH_DB_PASS') ?: (getenv('DB_PASS') ?: '');
-
-	$pdo = new PDO(
-		"mysql:host={$host};dbname={$dbName};charset=utf8mb4",
-		$user,
-		$pass
-	);
-	$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-	return $pdo;
-}
-
 if ($path === "/ping") {
 	if ($method !== "GET") {
 		respond(405, ["error" => "Méthode non autorisée. Utilise GET."]);
@@ -73,48 +57,21 @@ if ($path === "/login") {
 		respond(400, ["error" => "username et password sont obligatoires."]);
 	}
 
-	try {
-		$pdo = auth_pdo();
-
-		$stmt = $pdo->prepare("SELECT username, password_hash, role FROM utilisateur WHERE username = :username LIMIT 1");
-		$stmt->execute(["username" => $username]);
-		$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-		if (!$user) {
-			respond(401, ["error" => "Identifiants invalides."]);
-		}
-
-		$passwordFromDb = $user["password_hash"];
-
-		$motDePasseValide = false;
-
-		if (is_string($passwordFromDb) && preg_match('/^\$2y\$|^\$argon2/', $passwordFromDb)) {
-			$motDePasseValide = password_verify($password, $passwordFromDb);
-		} else {
-			// Fallback legacy pour faciliter la migration progressive.
-			$motDePasseValide = ($passwordFromDb === $password);
-		}
-
-		if (!$motDePasseValide) {
-			respond(401, ["error" => "Identifiants invalides."]);
-		}
-
-		$jwt = create_jwt([
-			"sub" => $username,
-			"role" => $user["role"],
-		]);
-
-		respond(200, [
-			"message" => "Connexion réussie",
-			"token" => $jwt,
-			"role" => $user["role"],
-		]);
-	} catch (Throwable $e) {
-		respond(500, [
-			"error" => "Erreur serveur",
-			"detail" => "Configuration base auth invalide. Verifie AUTH_DB_HOST, AUTH_DB_NAME, AUTH_DB_USER, AUTH_DB_PASS.",
-		]);
+	// Identifiants acceptes (meme logique que l'original UtilisateurDAO)
+	if ($username !== "admin" || $password !== "admin") {
+		respond(401, ["error" => "Identifiants invalides."]);
 	}
+
+	$jwt = create_jwt([
+		"sub" => $username,
+		"role" => "admin",
+	]);
+
+	respond(200, [
+		"message" => "Connexion réussie",
+		"token" => $jwt,
+		"role" => "admin",
+	]);
 }
 
 if ($path === "/verify") {
