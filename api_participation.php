@@ -1,18 +1,7 @@
 <?php
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
-/**
- * API de gestion des Participations (feuilles de match)
- *
- * Routes :
- *   GET    /api/participation                        -> lister toutes les participations
- *   GET    /api/participation/rencontre/{id}         -> feuille de match d'une rencontre
- *   POST   /api/participation                        -> assigner un joueur à une rencontre
- *   PUT    /api/participation/{id}                   -> modifier une participation
- *   DELETE /api/participation/{id}                   -> supprimer une participation
- *   PATCH  /api/participation/{id}/performance       -> mettre à jour la performance
- *   DELETE /api/participation/{id}/performance       -> supprimer la performance
- */
+// API Participations - feuilles de match + performances
 
 require_once __DIR__ . '/Psr4AutoloaderClass.php';
 require_once __DIR__ . '/api_auth_client.php';
@@ -37,30 +26,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// ---- Vérification du token JWT via API d'auth ----
+// Vérif token
 $bearerToken = get_bearer_token();
-error_log("[API_PARTICIPATION] Bearer token: " . ($bearerToken ? 'present' : 'ABSENT'));
-
 $tokenStatus = verify_token_with_auth_api($bearerToken);
 if (!$tokenStatus['valid']) {
     http_response_code($tokenStatus['status']);
-    echo json_encode([
-        'erreur' => $tokenStatus['error'],
-        'debug_auth' => $tokenStatus['debug'] ?? [],
-    ]);
+    echo json_encode(['erreur' => $tokenStatus['error']]);
     exit();
 }
 
-// ---- Parsing de l'URL ----
+// Parsing URL
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri = preg_replace('#^.*?/api/participation#', '', $uri);
 $parts = explode('/', trim($uri, '/'));
 
-// Détection des sous-routes
-$sousEntite = isset($parts[0]) && !is_numeric($parts[0]) ? $parts[0] : null; // ex: "rencontre"
+// Sous-routes
+$sousEntite = isset($parts[0]) && !is_numeric($parts[0]) ? $parts[0] : null;
 $idSousEntite = isset($parts[1]) && is_numeric($parts[1]) ? (int)$parts[1] : null;
 $id = isset($parts[0]) && is_numeric($parts[0]) ? (int)$parts[0] : null;
-$sousRoute = isset($parts[1]) && !is_numeric($parts[1]) ? $parts[1] : null; // ex: "performance"
+$sousRoute = isset($parts[1]) && !is_numeric($parts[1]) ? $parts[1] : null;
 
 $method = $_SERVER['REQUEST_METHOD'];
 $body = json_decode(file_get_contents('php://input'), true);

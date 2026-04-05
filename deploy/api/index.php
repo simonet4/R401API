@@ -1,4 +1,5 @@
 <?php
+// API d'authentification - login, verify, ping
 
 require_once __DIR__ . '/jwt_utils.php';
 
@@ -16,14 +17,12 @@ if ($method === 'OPTIONS') {
 
 $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 $path = rtrim($path, "/");
-// Supprimer le prefixe /auth-api si present (deploiement dans un sous-dossier)
+// Enlever le préfixe /auth-api si présent
 $path = preg_replace('#^.*/auth-api#', '', $path);
 
 if ($path === "") {
 	$path = "/";
 }
-
-error_log("[AUTH-API] Requete: method={$method}, path={$path}, uri={$_SERVER['REQUEST_URI']}");
 
 function respond(int $status, array $data): void
 {
@@ -55,15 +54,12 @@ if ($path === "/login") {
 	$username = $body["username"] ?? "";
 	$password = $body["password"] ?? "";
 
-	error_log("[AUTH-API] Tentative login: username={$username}");
-
 	if ($username === "" || $password === "") {
 		respond(400, ["error" => "username et password sont obligatoires."]);
 	}
 
-	// Identifiants acceptes (meme logique que l'original UtilisateurDAO)
+	// Login admin/admin
 	if ($username !== "admin" || $password !== "admin") {
-		error_log("[AUTH-API] Login ECHOUE: mauvais identifiants");
 		respond(401, ["error" => "Identifiants invalides."]);
 	}
 
@@ -71,8 +67,6 @@ if ($path === "/login") {
 		"sub" => $username,
 		"role" => "admin",
 	]);
-
-	error_log("[AUTH-API] Login REUSSI pour {$username}, token genere");
 
 	respond(200, [
 		"message" => "Connexion réussie",

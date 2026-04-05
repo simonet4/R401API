@@ -1,4 +1,5 @@
 <?php
+// Front controller - routage des pages
 require_once __DIR__ . '/Psr4AutoloaderClass.php';
 use R301\Psr4AutoloaderClass;
 
@@ -8,6 +9,7 @@ $loader->addNamespace('R301', __DIR__);
 
 require_once __DIR__ . '/Vue/Http/ApiClient.php';
 
+// Ignorer les fichiers statiques
 if (preg_match('/\.(?:png|jpg|jpeg|gif|ico|css|js)\??.*$/', $_SERVER["REQUEST_URI"])) {
     return false;
 }
@@ -15,6 +17,7 @@ if (preg_match('/\.(?:png|jpg|jpeg|gif|ico|css|js)\??.*$/', $_SERVER["REQUEST_UR
 session_start();
 ob_start();
 
+// Routing
 $routePath = strtok($_SERVER["REQUEST_URI"], '?');
 $routePath = rtrim($routePath, '/');
 if ($routePath === '' || $routePath === '/') {
@@ -24,6 +27,7 @@ if ($routePath === '' || $routePath === '/') {
 $isLoginRoute = ($routePath === '/login');
 $isLogoutRoute = ($routePath === '/logout');
 
+// Logout
 if ($isLogoutRoute) {
     unset($_SESSION['auth_token'], $_SESSION['auth_role'], $_SESSION['username']);
     session_destroy();
@@ -32,7 +36,7 @@ if ($isLogoutRoute) {
 }
 
 if (!$isLoginRoute) {
-    // Verifier que le token existe ET n'est pas expire
+    // Vérifier token JWT en session (existence + expiration)
     $token = $_SESSION['auth_token'] ?? null;
     $tokenValide = false;
     if (is_string($token) && $token !== '') {

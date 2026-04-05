@@ -1,15 +1,7 @@
 <?php
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
-/**
- * API de demande de Statistiques
- *
- * Routes :
- *   GET /api/statistiques/equipe           -> statistiques de l'équipe
- *   GET /api/statistiques/joueurs          -> statistiques de tous les joueurs
- *   GET /api/statistiques/dashboard        -> statistiques équipe + joueurs
- *   GET /api/statistiques/mes-evaluations  -> évaluations du joueur connecté
- */
+// API Statistiques - stats équipe, joueurs, dashboard, évaluations
 
 require_once __DIR__ . '/Psr4AutoloaderClass.php';
 require_once __DIR__ . '/api_auth_client.php';
@@ -33,35 +25,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-error_log("[API_STATS] Requete recue: method={$_SERVER['REQUEST_METHOD']}, uri={$_SERVER['REQUEST_URI']}");
-
-// ---- Vérification du token JWT via API d'auth ----
+// Vérif token
 $bearerToken = get_bearer_token();
-error_log("[API_STATS] Bearer token: " . ($bearerToken ? substr($bearerToken, 0, 20) . '...' : 'ABSENT'));
-
 $tokenStatus = verify_token_with_auth_api($bearerToken);
-error_log("[API_STATS] Token status: valid=" . ($tokenStatus['valid'] ? 'OUI' : 'NON') . ", error=" . ($tokenStatus['error'] ?? 'aucune'));
-
 if (!$tokenStatus['valid']) {
     http_response_code($tokenStatus['status']);
-    echo json_encode([
-        'erreur' => $tokenStatus['error'],
-        'debug_auth' => $tokenStatus['debug'] ?? [],
-    ]);
+    echo json_encode(['erreur' => $tokenStatus['error']]);
     exit();
 }
 
-// ---- Parsing de l'URL ----
+// Parsing URL
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri = preg_replace('#^.*?/api/statistiques#', '', $uri);
-$sousRoute = trim($uri, '/'); // "equipe", "joueurs" ou "mes-evaluations"
+$sousRoute = trim($uri, '/');
 
 $method = $_SERVER['REQUEST_METHOD'];
-
 $ctrl = StatistiquesControleur::getInstance();
 $participationCtrl = ParticipationControleur::getInstance();
-
-// ---- Routage ----
 try {
     if ($method !== 'GET') {
         http_response_code(405);
@@ -95,21 +75,16 @@ try {
     if ($sousRoute === 'dashboard') {
         $payload = is_array($tokenStatus['payload'] ?? null) ? $tokenStatus['payload'] : [];
         $role = strtolower((string)($payload['role'] ?? ''));
-        error_log("[API_STATS] Dashboard: role={$role}");
         if ($role !== 'joueur' && $role !== 'admin') {
             http_response_code(403);
-            echo json_encode(['erreur' => 'Accès interdit', 'debug_role' => $role]);
+            echo json_encode(['erreur' => 'Accès interdit']);
             exit();
         }
 
         try {
-            error_log("[API_STATS] Dashboard: chargement statsEquipe...");
             $statsEquipe = $ctrl->getStatistiquesEquipe();
-            error_log("[API_STATS] Dashboard: chargement statsJoueurs...");
             $statsJoueurs = $ctrl->getStatistiquesJoueurs();
-            error_log("[API_STATS] Dashboard: chargement joueurs...");
             $joueurs = JoueurControleur::getInstance()->listerTousLesJoueurs();
-            error_log("[API_STATS] Dashboard: " . count($joueurs) . " joueurs charges");
 
             $joueursPayload = [];
             foreach ($joueurs as $joueur) {
@@ -128,7 +103,6 @@ try {
                 ];
             }
 
-            error_log("[API_STATS] Dashboard: OK, envoi reponse");
             echo json_encode([
                 'equipe' => [
                     'nbVictoires'            => $statsEquipe->nbVictoires(),
@@ -141,13 +115,8 @@ try {
                 'joueurs' => $joueursPayload,
             ]);
         } catch (\Throwable $e) {
-            error_log("[API_STATS] Dashboard ERREUR: " . $e->getMessage() . " dans " . $e->getFile() . ":" . $e->getLine());
             http_response_code(500);
-            echo json_encode([
-                'erreur' => 'Erreur interne dashboard',
-                'debug_message' => $e->getMessage(),
-                'debug_file' => basename($e->getFile()) . ':' . $e->getLine(),
-            ]);
+            echo json_encode(['erreur' => 'Erreur interne dashboard']);
         }
         exit();
     }

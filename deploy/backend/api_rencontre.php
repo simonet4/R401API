@@ -1,17 +1,7 @@
 <?php
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
-/**
- * API de gestion des Rencontres (matchs)
- * 
- * Routes :
- *   GET    /api/rencontre           -> lister toutes les rencontres
- *   GET    /api/rencontre/{id}      -> obtenir une rencontre par ID
- *   POST   /api/rencontre           -> créer une rencontre
- *   PUT    /api/rencontre/{id}      -> modifier une rencontre
- *   DELETE /api/rencontre/{id}      -> supprimer une rencontre
- *   PATCH  /api/rencontre/{id}/resultat -> enregistrer le résultat
- */
+// API Rencontres - CRUD + résultats
 
 require_once __DIR__ . '/Psr4AutoloaderClass.php';
 require_once __DIR__ . '/api_auth_client.php';
@@ -35,9 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// ---- Parsing de l'URL ----
+// Parsing URL
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-// Compatible URL directe /api/rencontre et /r301-main/api/rencontre
 $uri = preg_replace('#^.*?/api/rencontre#', '', $uri);
 $parts = explode('/', trim($uri, '/'));
 
@@ -72,26 +61,21 @@ function rencontreToArray($r): array {
     ];
 }
 
-// ---- Routage ----
+// Routage
 try {
-    // Lecture publique de la liste des rencontres passées et à venir.
+    // GET public - liste des rencontres
     if ($method === 'GET' && $id === null) {
         $rencontres = $ctrl->listerToutesLesRencontres();
         echo json_encode(array_map('rencontreToArray', $rencontres));
         exit();
     }
 
-    // Toutes les autres routes restent protégées.
+    // Les autres routes sont protégées par JWT
     $bearerToken = get_bearer_token();
-    error_log("[API_RENCONTRE] Bearer token: " . ($bearerToken ? 'present' : 'ABSENT'));
     $tokenStatus = verify_token_with_auth_api($bearerToken);
-    error_log("[API_RENCONTRE] Token status: valid=" . ($tokenStatus['valid'] ? 'OUI' : 'NON') . ", error=" . ($tokenStatus['error'] ?? 'aucune'));
     if (!$tokenStatus['valid']) {
         http_response_code($tokenStatus['status']);
-        echo json_encode([
-            'erreur' => $tokenStatus['error'],
-            'debug_auth' => $tokenStatus['debug'] ?? [],
-        ]);
+        echo json_encode(['erreur' => $tokenStatus['error']]);
         exit();
     }
 

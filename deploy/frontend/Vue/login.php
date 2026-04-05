@@ -1,6 +1,8 @@
 
 <?php
+// Page de login - appelle l'API auth pour obtenir un JWT
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["username"]) && isset($_POST["password"])) {
+    // Construction de l'URL de login
     $authLoginUrl = getenv('AUTH_LOGIN_URL');
     if ($authLoginUrl === false || $authLoginUrl === '') {
         $authLoginUrl = $_SERVER['AUTH_LOGIN_URL'] ?? $_ENV['AUTH_LOGIN_URL'] ?? '';
@@ -11,7 +13,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["username"]) && isset($
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $authLoginUrl = $scheme . '://' . $host . '/auth-api/login';
     }
-    error_log("[VUE_LOGIN] Tentative login: url={$authLoginUrl}, username=" . trim((string)$_POST['username']));
 
     $payload = json_encode([
         'username' => trim((string)$_POST['username']),
@@ -29,14 +30,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["username"]) && isset($
     ]);
 
     $result = @file_get_contents($authLoginUrl, false, $context);
-    error_log("[VUE_LOGIN] Reponse brute: " . ($result === false ? 'FALSE (connexion echouee)' : substr((string)$result, 0, 200)));
     $statusCode = 500;
     if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $matches)) {
         $statusCode = (int)$matches[1];
     }
 
     $decoded = is_string($result) ? json_decode($result, true) : null;
-    error_log("[VUE_LOGIN] Status: {$statusCode}, token_present=" . (is_array($decoded) && isset($decoded['token']) ? 'OUI' : 'NON'));
     if ($statusCode === 200 && is_array($decoded) && isset($decoded['token'])) {
         $_SESSION['auth_token'] = (string)$decoded['token'];
         $_SESSION['auth_role'] = (string)($decoded['role'] ?? '');
@@ -49,7 +48,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["username"]) && isset($
     $erreur = is_array($decoded) && isset($decoded['error'])
         ? (string)$decoded['error']
         : "Le nom d'Utilisateur ou le mot de passe est incorrect";
-    error_log("[VUE_LOGIN] Login ECHOUE: {$erreur}");
 }
 ?>
 

@@ -1,5 +1,6 @@
 <?php
 
+// Récupère le token Bearer depuis les headers HTTP
 function get_bearer_token(): ?string {
     $headers = function_exists('getallheaders') ? getallheaders() : [];
 
@@ -20,11 +21,7 @@ function get_bearer_token(): ?string {
     return trim($authorization);
 }
 
-// ---- Verification JWT locale (sans appel HTTP) ----
-// L'appel HTTP loopback (file_get_contents vers le meme serveur)
-// est bloque sur les hebergements mutualises comme Alwaysdata.
-// On verifie le token directement avec la meme cle secrete.
-
+// Vérification JWT locale (pas d'appel HTTP, bloqué sur mutualisé)
 function _auth_base64url_decode(string $data): string {
     $padding = strlen($data) % 4;
     if ($padding > 0) {
@@ -33,6 +30,7 @@ function _auth_base64url_decode(string $data): string {
     return base64_decode(strtr($data, '-_', '+/'));
 }
 
+// Récupère le secret JWT depuis les variables d'env
 function _auth_jwt_secret(): string {
     $secret = getenv('AUTH_JWT_SECRET');
     if ($secret === false || $secret === '') {
@@ -44,91 +42,38 @@ function _auth_jwt_secret(): string {
     return $secret;
 }
 
+// Vérifie le token JWT et retourne le résultat
 function verify_token_with_auth_api(?string $token): array {
-    // DEBUG: log chaque etape de verification
-    $debug = [];
-    $debug[] = '[AUTH_CLIENT] verify_token_with_auth_api() appelee';
-    $debug[] = '[AUTH_CLIENT] Token recu: ' . ($token === null ? 'NULL' : (strlen($token) > 20 ? substr($token, 0, 20) . '...' : $token));
-
     if ($token === null || $token === '') {
-        $debug[] = '[AUTH_CLIENT] ERREUR: token vide ou null';
-        error_log(implode(' | ', $debug));
-        return [
-            'valid' => false,
-            'status' => 401,
-            'error' => 'Token manquant',
-            'debug' => $debug,
-        ];
+        return ['valid' => false, 'status' => 401, 'error' => 'Token manquant'];
     }
 
     $parts = explode('.', $token);
-    $debug[] = '[AUTH_CLIENT] Nombre de parties JWT: ' . count($parts);
-
     if (count($parts) !== 3) {
-        $debug[] = '[AUTH_CLIENT] ERREUR: format JWT invalide (attendu 3 parties)';
-        error_log(implode(' | ', $debug));
-        return [
-            'valid' => false,
-            'status' => 401,
-            'error' => 'Token invalide (format)',
-            'debug' => $debug,
-        ];
+        return ['valid' => false, 'status' => 401, 'error' => 'Token invalide (format)'];
     }
 
     [$encodedHeader, $encodedPayload, $encodedSignature] = $parts;
     $unsignedToken = $encodedHeader . '.' . $encodedPayload;
 
-    $secret = _auth_jwt_secret();
-    $debug[] = '[AUTH_CLIENT] Secret utilise (4 premiers chars): ' . substr($secret, 0, 4) . '...';
-
-    $expectedSignature = hash_hmac('sha256', $unsignedToken, $secret, true);
+    // Vérif signature HMAC
+    $expectedSignature = hash_hmac('sha256', $unsignedToken, _auth_jwt_secret(), true);
     $givenSignature = _auth_base64url_decode($encodedSignature);
 
     if (!hash_equals($expectedSignature, $givenSignature)) {
-        $debug[] = '[AUTH_CLIENT] ERREUR: signature HMAC invalide';
-        error_log(implode(' | ', $debug));
-        return [
-            'valid' => false,
-            'status' => 401,
-            'error' => 'Token invalide (signature)',
-            'debug' => $debug,
-        ];
+        return ['valid' => false, 'status' => 401, 'error' => 'Token invalide (signature)'];
     }
 
-    $debug[] = '[AUTH_CLIENT] Signature OK';
-
+    // Décode le payload
     $payload = json_decode(_auth_base64url_decode($encodedPayload), true);
     if (!is_array($payload)) {
-        $debug[] = '[AUTH_CLIENT] ERREUR: payload JSON invalide';
-        error_log(implode(' | ', $debug));
-        return [
-            'valid' => false,
-            'status' => 401,
-            'error' => 'Token invalide (payload)',
-            'debug' => $debug,
-        ];
+        return ['valid' => false, 'status' => 401, 'error' => 'Token invalide (payload)'];
     }
 
-    $debug[] = '[AUTH_CLIENT] Payload decode: sub=' . ($payload['sub'] ?? '?') . ', role=' . ($payload['role'] ?? '?') . ', exp=' . ($payload['exp'] ?? '?');
-
+    // Vérif expiration
     if (!isset($payload['exp']) || time() >= (int)$payload['exp']) {
-        $debug[] = '[AUTH_CLIENT] ERREUR: token expire (now=' . time() . ', exp=' . ($payload['exp'] ?? 'absent') . ')';
-        error_log(implode(' | ', $debug));
-        return [
-            'valid' => false,
-            'status' => 401,
-            'error' => 'Token expire',
-            'debug' => $debug,
-        ];
+        return ['valid' => false, 'status' => 401, 'error' => 'Token expire'];
     }
 
-    $debug[] = '[AUTH_CLIENT] Token VALIDE';
-    error_log(implode(' | ', $debug));
-
-    return [
-        'valid' => true,
-        'status' => 200,
-        'payload' => $payload,
-        'debug' => $debug,
-    ];
+    return ['valid' => true, 'status' => 200, 'payload' => $payload];
 }

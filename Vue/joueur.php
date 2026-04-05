@@ -1,11 +1,6 @@
 <?php
-
-error_log("[VUE_JOUEUR] Chargement de la liste des joueurs");
+// Liste des joueurs avec recherche et filtre par statut
 $response = api_get('/api/joueur');
-error_log("[VUE_JOUEUR] Reponse API: ok=" . ($response['ok'] ? 'OUI' : 'NON') . ", status=" . ($response['status'] ?? '?') . ", nb_joueurs=" . (is_array($response['data']) ? count($response['data']) : 0));
-if (!$response['ok']) {
-    error_log("[VUE_JOUEUR] Erreur: " . ($response['error'] ?? 'inconnue') . ", data=" . json_encode($response['data'] ?? null));
-}
 $joueurs = ($response['ok'] && is_array($response['data'])) ? $response['data'] : [];
 $apiError = $response['ok'] ? null : ($response['error'] ?? 'Erreur API');
 

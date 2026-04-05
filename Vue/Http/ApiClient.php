@@ -1,5 +1,7 @@
 <?php
+// Client HTTP pour appeler l'API backend
 
+// Chemin de base de l'appli
 function app_base_path(): string {
     $scriptName = (string)($_SERVER['SCRIPT_NAME'] ?? '');
     $dir = str_replace('\\', '/', dirname($scriptName));
@@ -11,6 +13,7 @@ function app_base_path(): string {
     return rtrim($dir, '/');
 }
 
+// Construit l'URL de base de l'API
 function api_base_url(): string {
     $configured = getenv('TEAM_API_BASE_URL');
     if ($configured === false || $configured === '') {
@@ -27,13 +30,13 @@ function api_base_url(): string {
     return $scheme . '://' . $host . app_base_path();
 }
 
+// Requete HTTP générique vers l'API
 function api_request(string $method, string $path, ?array $body = null, bool $authRequired = true): array {
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
 
     $url = api_base_url() . $path;
-    error_log("[API_CLIENT] Requete: method=$method, url=$url, authRequired=" . ($authRequired ? 'OUI' : 'NON'));
 
     $headers = [
         'Content-Type: application/json',
@@ -76,21 +79,16 @@ function api_request(string $method, string $path, ?array $body = null, bool $au
     }
 
     if ($raw === false) {
-        error_log("[API_CLIENT] ECHEC file_get_contents pour $url");
         return [
             'ok' => false,
             'status' => 503,
             'data' => null,
-            'error' => 'API inaccessible (url=' . $url . ')',
+            'error' => 'API inaccessible',
         ];
     }
 
     $decoded = json_decode($raw, true);
     $data = is_array($decoded) ? $decoded : null;
-    error_log("[API_CLIENT] Reponse: status=$status, body_len=" . strlen($raw) . ", json_ok=" . ($data !== null ? 'OUI' : 'NON'));
-    if ($data === null && strlen($raw) > 0) {
-        error_log("[API_CLIENT] RAW BODY (premiers 500 chars): " . substr($raw, 0, 500));
-    }
 
     $result = [
         'ok' => $status >= 200 && $status < 300,
@@ -101,8 +99,8 @@ function api_request(string $method, string $path, ?array $body = null, bool $au
             : ('HTTP ' . $status),
     ];
 
+    // Si 401, on redirige vers le login
     if ($authRequired && $status === 401) {
-        error_log("[API_CLIENT] 401 recu, invalidation session et redirect login");
         unset($_SESSION['auth_token'], $_SESSION['auth_role'], $_SESSION['username']);
 
         $currentPath = parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '';

@@ -1,16 +1,10 @@
 <?php
-
-error_log("[VUE_DASHBOARD] Chargement du tableau de bord");
+// Tableau de bord - stats équipe + joueurs
 $dashboardResponse = api_get('/api/statistiques/dashboard');
-error_log("[VUE_DASHBOARD] Reponse API: ok=" . ($dashboardResponse['ok'] ? 'OUI' : 'NON') . ", status=" . ($dashboardResponse['status'] ?? '?') . ", error=" . ($dashboardResponse['error'] ?? 'aucune'));
-if (!$dashboardResponse['ok']) {
-    error_log("[VUE_DASHBOARD] Data brute: " . json_encode($dashboardResponse['data'] ?? null));
-}
 $dashboardData = ($dashboardResponse['ok'] && is_array($dashboardResponse['data'])) ? $dashboardResponse['data'] : [];
 
 $statsEquipe = is_array($dashboardData['equipe'] ?? null) ? $dashboardData['equipe'] : [];
 $statsJoueurs = is_array($dashboardData['joueurs'] ?? null) ? $dashboardData['joueurs'] : [];
-error_log("[VUE_DASHBOARD] statsEquipe keys: " . implode(',', array_keys($statsEquipe)) . ", nbJoueurs=" . count($statsJoueurs));
 
 $dashboardError = $dashboardResponse['ok'] ? null : ($dashboardResponse['error'] ?? 'Erreur API dashboard');
 

@@ -1,17 +1,7 @@
 <?php
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
-/**
- * API de gestion des Joueurs
- *
- * Routes :
- *   GET    /api/joueur                    -> liste des joueurs
- *   GET    /api/joueur/{id}               -> détail d'un joueur
- *   POST   /api/joueur                    -> créer un joueur
- *   PUT    /api/joueur/{id}               -> modifier un joueur
- *   DELETE /api/joueur/{id}               -> supprimer un joueur (si jamais participé)
- *   POST   /api/joueur/{id}/commentaire   -> ajouter un commentaire
- */
+// API Joueurs - CRUD + commentaires
 
 require_once __DIR__ . '/Psr4AutoloaderClass.php';
 require_once __DIR__ . '/api_auth_client.php';
@@ -31,20 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-error_log("[API_JOUEUR] Requete recue: method={$_SERVER['REQUEST_METHOD']}, uri={$_SERVER['REQUEST_URI']}");
-
+// Vérif token JWT
 $bearerToken = get_bearer_token();
-error_log("[API_JOUEUR] Bearer token: " . ($bearerToken ? substr($bearerToken, 0, 20) . '...' : 'ABSENT'));
-
 $tokenStatus = verify_token_with_auth_api($bearerToken);
-error_log("[API_JOUEUR] Token status: valid=" . ($tokenStatus['valid'] ? 'OUI' : 'NON') . ", error=" . ($tokenStatus['error'] ?? 'aucune'));
-
 if (!$tokenStatus['valid']) {
     http_response_code($tokenStatus['status']);
-    echo json_encode([
-        'erreur' => $tokenStatus['error'],
-        'debug_auth' => $tokenStatus['debug'] ?? [],
-    ]);
+    echo json_encode(['erreur' => $tokenStatus['error']]);
     exit();
 }
 

@@ -1,5 +1,5 @@
 <?php
-
+// Singleton PDO pour la connexion BDD
 namespace R301\Modele;
 
 use Exception;
@@ -13,6 +13,7 @@ class DatabaseHandler {
     private readonly string $login;
     private readonly string $mdp;
 
+    // Récupère une variable d'env (getenv -> $_SERVER -> $_ENV)
     private static function env(string $key, string $default = ''): string {
         $val = getenv($key);
         if ($val !== false && $val !== '') return $val;
@@ -24,8 +25,6 @@ class DatabaseHandler {
         $defaultDb = self::env('DB_NAME', 'backendalwaysdata_r401');
         $defaultLogin = self::env('DB_USER', 'root');
         $defaultMdp = self::env('DB_PASS', '');
-
-        error_log("[DB] Tentative connexion: host={$defaultServer}, db={$defaultDb}, user={$defaultLogin}");
 
         try {
             $pdo = new PDO(
@@ -40,10 +39,8 @@ class DatabaseHandler {
             $this->login = $defaultLogin;
             $this->mdp = $defaultMdp;
             $this->linkpdo = $pdo;
-            error_log("[DB] Connexion reussie a {$defaultDb}");
         } catch (Exception $e) {
-            error_log("[DB] ERREUR connexion: " . $e->getMessage());
-            die("Erreur BDD : " . $e->getMessage() . ". Verifiez DB_HOST, DB_NAME, DB_USER, DB_PASS. Base tentee: {$defaultDb}");
+            die("Erreur BDD : " . $e->getMessage());
         }
     }
 
