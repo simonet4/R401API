@@ -14,22 +14,41 @@ class DatabaseHandler {
     private readonly string $mdp;
 
     private function __construct(){
-        $this->server = getenv('DB_HOST') ?: 'localhost';
-        $this->db     = getenv('DB_NAME') ?: 'r301';
-        $this->login  = getenv('DB_USER') ?: 'r301';
-        $this->mdp    = getenv('DB_PASS') ?: '';
+        $defaultServer = getenv('DB_HOST') ?: 'localhost';
+        $defaultDb = getenv('DB_NAME') ?: 'simsar_r301';
+        $defaultLogin = getenv('DB_USER') ?: 'root';
+        $defaultMdp = getenv('DB_PASS') ?: '';
 
-        try {
-            $pdo = new PDO(
-                "mysql:host={$this->server};dbname={$this->db};charset=utf8mb4",
-                $this->login,
-                $this->mdp
-            );
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->linkpdo = $pdo;
-        } catch (Exception $e) {
-            die("Erreur BDD : {$e->getMessage()}. Configurez DB_HOST, DB_NAME, DB_USER, DB_PASS.");
+        $candidats = [
+            [$defaultServer, $defaultDb, $defaultLogin, $defaultMdp],
+            ['localhost', 'r301', 'root', ''],
+            ['localhost', 'r301', 'root', 'root'],
+        ];
+
+        $derniereException = null;
+
+        foreach ($candidats as [$server, $db, $login, $mdp]) {
+            try {
+                $pdo = new PDO(
+                    "mysql:host={$server};dbname={$db};charset=utf8mb4",
+                    $login,
+                    $mdp
+                );
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                $this->server = $server;
+                $this->db = $db;
+                $this->login = $login;
+                $this->mdp = $mdp;
+                $this->linkpdo = $pdo;
+                return;
+            } catch (Exception $e) {
+                $derniereException = $e;
+            }
         }
+
+        $message = $derniereException ? $derniereException->getMessage() : 'Connexion impossible';
+        die("Erreur : {$message}. Configurez DB_HOST, DB_NAME, DB_USER, DB_PASS ou créez la base r301.");
     }
 
     public static function getInstance(): DatabaseHandler
